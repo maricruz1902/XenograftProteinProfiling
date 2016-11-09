@@ -1,0 +1,119 @@
+---
+title: "Subgroup Meeting"
+author: "James Wade"
+date: "November 11, 2016"
+output:
+  html_notebook: default
+  html_document: default
+---
+## Using R to Plot Compiled Data
+
+Here is the the code to analyze compiled data from multiplex protein detection in patient derived tumor xenografts under various treatments. Here is the code to access the data from GitHub:
+
+```{r}
+url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
+filename <- basename(url)
+download.file(url,destfile=filename)
+```
+
+Importing the data using `library(reader)` and `read_csv`:
+
+```{r}
+library(readr)
+dat <- read_csv(filename)
+```
+
+Here's what the data looks like:
+
+```{r}
+head(dat)
+```
+
+### Plot by Target
+The following function plots the data by target clustering with a combination of Time Points and Cell Line.
+
+```{r}
+plotByTarget <- function(i){
+    library(readr)
+    library(ggplot2)
+    targetList <- unique(dat$Target)
+    dat.Target <- dat[dat$Target == targetList[i],]
+    
+    #set error bars
+    limits <- aes(ymax = `Relative Shift` + `Standard Deviation`, 
+                  ymin = `Relative Shift` - `Standard Deviation`)
+    
+    #plot figure
+    plots <- ggplot(data = dat.Target,
+        # group lets `ggplot` know we want different errorbars/bars for each day
+        aes(x = Treatment, y = `Relative Shift`, 
+            group = interaction(factor(`Time Point`), factor(`Cell Line`)))) +
+        geom_bar(stat = "identity", aes(fill = interaction(factor(`Time Point`), 
+            factor(`Cell Line`))), position = position_dodge(width = 0.9)) +
+        ylab("Net Shift (pm)") +
+        geom_errorbar(limits, width = 0.4, size = 0.3,
+            position = position_dodge(width = 0.9)) +
+        theme_bw() + theme(panel.grid = element_blank(), 
+            axis.title.x=element_blank()) + 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+    #configure legend
+    plots <- plots + scale_fill_discrete(name="Cell Line and Treatment", 
+                labels=c("GBM-6 1 h Treatment", "GBM-6 24 h Treatment", 
+                "GBM-26 1 h Treatment", "GBM-26 24 h Treatment")) + 
+                theme(legend.key = element_rect(colour = 'white',
+                    fill = 'white'), legend.key.size = unit(0.4, "cm")) 
+    plots            
+    #save figure
+    #filename = paste(targetList[i], 'png', sep='.')
+    #ggsave(plots, file = filename, width = 8, height = 6)
+}
+plotByTarget(3)
+```
+
+###Plot by Time Point
+Another function was written to plot data by Time Point instead of Target.
+
+```{r}
+plotByTimepoint <- function(i, j){
+    
+    #create lists for data islation
+    timepointList <- unique(dat$`Time Point`)
+    cellLineList <- unique(dat$`Cell Line`)
+    dat.Timepoint <- dat[dat$`Time Point` == timepointList[i] & 
+                             dat$`Cell Line` == cellLineList[j],]
+    
+    #set error bars
+    limits <- aes(ymax = `Relative Shift` + `Standard Deviation`, 
+                  ymin = `Relative Shift` - `Standard Deviation`)
+    
+    #plot colors
+    extPalette <- c("#771155", "#AA4488", "#CC99BB", "#114477", "#4477AA", 
+                   "#77AADD", "#117777", "#44AAAA", "#77CCCC", "#117744", 
+                   "#44AA77", "#88CCAA", "#774411", "#AA7744", "#DDAA77", 
+                   "#771122", "#AA4455", "#DD7788")
+    
+    #plot figure settings
+    plots <- ggplot(data = dat.Timepoint,
+        # group lets `ggplot` know we want different errorbars/bars for each day
+        aes(x = Treatment, y = `Relative Shift`, group = factor(Target))) +
+        geom_bar(stat = "identity", position = position_dodge(width = 0.9), 
+                 aes(fill = factor(Target))) +
+        ylab("Net Shift (pm)") +
+        geom_errorbar(limits, width = 0.4, size = 0.3, colour = 'grey',
+                      position = position_dodge(width = 0.9)) +
+        theme_bw() + theme(panel.grid = element_blank(), 
+                           axis.title.x=element_blank()) + 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    #format plot legend and colors
+    plots <- plots + theme(legend.key = element_rect(colour = 'white', 
+                fill = 'white'), legend.key.size = unit(0.4, "cm")) +
+                scale_fill_manual(values = extPalette) + scale_fill_discrete(name="Target")
+    plots
+    #save figure
+    #filename = paste(timepointList[i],cellLineList[j], 'png', sep='.')
+    #ggsave(plots, file = filename, width = 8, height = 6)
+}
+plotByTimepoint(1,1)
+```

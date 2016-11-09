@@ -116,12 +116,14 @@ plotEachTarget <- function(i){
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
         ggtitle(paste("Target: ", targetList[i], sep=''))
 
-    #configure legend
-    plots <- plots + scale_fill_discrete(name="Cell Line and Treatment", 
+    #configure colors and legend
+    cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", 
+                   "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+    plots <- plots + scale_fill_manual(name="Cell Line and Treatment", 
                 labels=c("GBM-6 1 h Treatment", "GBM-6 24 h Treatment", 
-                "GBM-26 1 h Treatment", "GBM-26 24 h Treatment")) + 
+                "GBM-26 1 h Treatment", "GBM-26 24 h Treatment"), values = cbPalette) + 
                 theme(legend.key = element_rect(colour = 'white',
-                    fill = 'white'), legend.key.size = unit(0.4, "cm")) 
+                    fill = 'white'), legend.key.size = unit(0.4, "cm"))  
     plots            
     #save figure
     #filename = paste(targetList[i], 'png', sep='.')

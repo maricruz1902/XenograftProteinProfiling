@@ -1,38 +1,94 @@
 ---
-title: "Subgroup Meeting"
+title: "BioResonator Subgroup: Using R for Data Analysis"
 author: "James Wade"
 date: "November 11, 2016"
-output:
-  html_document: default
-  html_notebook: default
-  pdf_document: default
+output: ioslides_presentation
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
 ## Using R to Plot Compiled Data
 
-Here is the the code to analyze compiled data from multiplex protein detection in patient derived tumor xenografts under various treatments. Here is the code to access the data from GitHub:
+Here is the the code to analyze compiled data from multiplex protein detection in patient derived tumor xenografts under various treatments. 
 
-```{r}
-url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
+Here is the code to access the data from GitHub:
+
+```{r, echo = TRUE}
+url <- "https://raw.githubusercontent.com/jwade1221/
+XenograftProteinProfiling/master/Combined_Averaged.csv"
 filename <- basename(url)
 download.file(url,destfile=filename)
 ```
 
-Importing the data using `library(readr)` and `read_csv`:
+## Get the Data
 
-```{r}
+Importing the data using `library(readr)` and `read_csv` (plus a look at the data file):
+
+```{r, echo = TRUE}
 library(readr)
 dat <- read_csv(filename, col_types = cols())
-```
-
-Here's what the data looks like:
-
-```{r}
 head(dat)
 ```
 
-### Plotting Each Target
+## Function for Plotting Each Target
 
-The following function plots Treatment versus Relative Shift, grouping by Cell Line and Target. Each target is plotted separately.
+```{r, echo = TRUE, eval = FALSE}
+plotEachTarget <- function(i){
+    library(readr)
+    library(ggplot2)
+    targetList <- unique(dat$Target)
+    dat.Target <- dat[dat$Target == targetList[i],]
+    
+    #set error bars
+    limits <- aes(ymax = `Relative Shift` + `Standard Deviation`, 
+                  ymin = `Relative Shift` - `Standard Deviation`)
+```
+
+## Function for Plotting Each Target
+```{r, echo = TRUE, eval= FALSE}
+#plot figure
+plots <- ggplot(data = dat.Target,
+    aes(x = Treatment, y = `Relative Shift`, 
+        group = interaction(factor(`Time Point`), 
+        factor(`Cell Line`)))) +
+    geom_bar(stat = "identity", 
+        aes(fill = interaction(factor(`Time Point`), 
+        factor(`Cell Line`))), 
+        position = position_dodge(width = 0.9)) +
+    ylab("Net Shift (pm)") +
+    geom_errorbar(limits, width = 0.4, size = 0.3,
+        position = position_dodge(width = 0.9)) +
+    theme_bw() + theme(panel.grid = element_blank(), 
+        axis.title.x=element_blank()) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    ggtitle(paste("Target: ", targetList[i], sep=''))
+```
+
+## Function for Plotting Each Target
+   
+```{r, echo = TRUE, eval = FALSE}
+#configure legend
+plots <- plots + 
+        scale_fill_discrete(name="Cell Line and Treatment", 
+        labels=c("GBM-6 1 h Treatment", "GBM-6 24 h Treatment", 
+        "GBM-26 1 h Treatment", "GBM-26 24 h Treatment")) + 
+        theme(legend.key = element_rect(colour = 'white',
+        fill = 'white'), legend.key.size = unit(0.4, "cm")) 
+#plot figure
+plots
+
+#save figure
+filename = paste(targetList[i], 'png', sep='.')
+ggsave(plots, file = filename, width = 8, height = 6)
+}
+
+#execute function
+plotEachTarget(3)
+```
+
+## Plotting by Target
 
 ```{r}
 plotEachTarget <- function(i){
@@ -74,9 +130,7 @@ plotEachTarget <- function(i){
 plotEachTarget(3)
 ```
 
-###Plot Each Time Point
-
-The following function plots Treatment versus Relative Shift, grouping by Target. Each Time Point and Cell Line is plotted separately.
+## Plotting by Time Point & Cell Line
 
 ```{r}
 plotEachTimepoint <- function(i, j){
@@ -121,118 +175,6 @@ plotEachTimepoint <- function(i, j){
     #ggsave(plots, file = filename, width = 8, height = 6)
 }
 plotEachTimepoint(1,1)
-```
-
-##All Data Plotted by Target
-
-###Hydroxy-HIF-1$\alpha$
-
->Hypoxia-inducible factor 1 (HIF1) is a heterodimeric transcription factor that plays a critical role in the cellular response to hypoxia (1). The HIF1 complex consists of two subunits, HIF-1$\alpha$ and HIF-1$\beta$, which are basic helix-loop-helix proteins of the PAS (Per, ARNT, Sim) family (2). HIF1 regulates the transcription of a broad range of genes that facilitate responses to the hypoxic environment, including genes regulating angiogenesis, erythropoiesis, cell cycle, metabolism, and apoptosis. The widely expressed HIF-1$\alpha$ is typically degraded rapidly in normoxic cells by the ubiquitin/proteasomal pathway. Under normoxic conditions, HIF-1$\alpha$ is proline hydroxylated leading to a conformational change that promotes binding to the von Hippel Lindau protein (VLH) E3 ligase complex; ubiquitination and proteasomal degradation follows (3,4). Both hypoxic conditions and chemical hydroxylase inhibitors (such as desferrioxamine and cobalt) inhibit HIF-1$\alpha$ degradation and lead to its stabilization. In addition, HIF-1$\alpha$ can be induced in an oxygen-independent manner by various cytokines through the PI3K-AKT-mTOR pathway. *(Quoted from [Cell Signaling](https://www.cellsignal.com/products/primary-antibodies/hydroxy-hif-1a-pro564-d43b5-xp-rabbit-mab/3434))*
-
-```{r} 
-plotEachTarget(1)
-```
-
-###Phospho-Akt Thr308
-
-```{r}
-plotEachTarget(2)
-```
-
-###Phospho-Akt Ser473
-
-```{r}
-plotEachTarget(3)
-```
-
-###Phospho-c-Abl Tyr412
-
-```{r}
-plotEachTarget(4)
-```
-
-###Phospho-GSK-3$\beta$ Ser9
-
-```{r}
-plotEachTarget(5)
-```
-
-###Phospho-p44/42 MAPK (Erk1/2) Thr202/Tyr204
-
-```{r}
-plotEachTarget(6)
-```
-
-###Phospho-mTOR Ser2448
-
-```{r}
-plotEachTarget(7)
-```
-
-###Phospho-p53 Ser15
-
-```{r}
-plotEachTarget(8)
-```
-
-###Phospho-p70 S6 Kinase Thr389
-
-```{r}
-plotEachTarget(9)
-```
-
-###Phospho-PDK1 Ser241
-
-```{r}
-plotEachTarget(10)
-```
-
-###Phospho-Rb Ser780
-
-```{r}
-plotEachTarget(11)
-```
-
-###Phospho-Rb Ser807/811
-
-```{r}
-plotEachTarget(12)
-```
-
-###Phospho-S6 Ribosomal Protein Ser235/236
-
-```{r}
-plotEachTarget(13)
-```
-
-###Phospho-S6 Ribosomal Protein Ser240/244
-
-```{r}
-plotEachTarget(14)
-```
-
-###Phospho-Src Family Tyr416
-
-```{r}
-plotEachTarget(15)
-```
-
-##All Data Plotted by Treatment and Cell Line
-
-```{r}
-plotEachTimepoint(1,1)
-```
-
-```{r}
-plotEachTimepoint(1,2)
-```
-
-```{r}
-plotEachTimepoint(2,1)
-```
-
-```{r}
-plotEachTimepoint(2,2)
 ```
 
 

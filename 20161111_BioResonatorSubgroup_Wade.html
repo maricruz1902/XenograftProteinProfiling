@@ -131,18 +131,8 @@ $(document).ready(function () {
 filename &lt;- basename(url)
 download.file(url,destfile=filename)</code></pre>
 <p>Importing the data using <code>library(readr)</code> and <code>read_csv</code>:</p>
-<pre class="r"><code>library(readr)</code></pre>
-<pre><code>## Warning: package 'readr' was built under R version 3.2.5</code></pre>
-<pre class="r"><code>dat &lt;- read_csv(filename)</code></pre>
-<pre><code>## Parsed with column specification:
-## cols(
-##   `Time Point` = col_integer(),
-##   `Cell Line` = col_integer(),
-##   Treatment = col_character(),
-##   Target = col_character(),
-##   `Relative Shift` = col_double(),
-##   `Standard Deviation` = col_double()
-## )</code></pre>
+<pre class="r"><code>library(readr)
+dat &lt;- read_csv(filename, col_types = cols())</code></pre>
 <p>Here’s what the data looks like:</p>
 <pre class="r"><code>head(dat)</code></pre>
 <pre><code>## # A tibble: 6 × 6

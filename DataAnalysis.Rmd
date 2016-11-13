@@ -1,10 +1,11 @@
 ---
-title: "Subgroup Meeting"
+title: "Xenograft Protein Profiling Data"
 author: "James Wade"
 date: "November 11, 2016"
 output:
-  html_notebook: default
   html_document: default
+  html_notebook: default
+  pdf_document: default
 ---
 ## Using R to Plot Compiled Data
 
@@ -16,11 +17,11 @@ filename <- basename(url)
 download.file(url,destfile=filename)
 ```
 
-Importing the data using `library(reader)` and `read_csv`:
+Importing the data using `library(readr)` and `read_csv`:
 
 ```{r}
 library(readr)
-dat <- read_csv(filename)
+dat <- read_csv(filename, col_types = cols())
 ```
 
 Here's what the data looks like:
@@ -29,13 +30,18 @@ Here's what the data looks like:
 head(dat)
 ```
 
-### Plot by Target
-The following function plots the data by target clustering with a combination of Time Points and Cell Line.
+### Plotting Each Target
+
+The following function plots Treatment versus Relative Shift, grouping by Cell Line and Target. Each target is plotted separately.
 
 ```{r}
-plotByTarget <- function(i){
+plotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
     library(readr)
     library(ggplot2)
+    library(RColorBrewer)
+    
+    #import data
+    dat <- read_csv(filename, col_types = cols())
     targetList <- unique(dat$Target)
     dat.Target <- dat[dat$Target == targetList[i],]
     
@@ -43,39 +49,49 @@ plotByTarget <- function(i){
     limits <- aes(ymax = `Relative Shift` + `Standard Deviation`, 
                   ymin = `Relative Shift` - `Standard Deviation`)
     
+    #get colors
+    colorCount <- length(unique(dat$`Cell Line`)) + 
+                length(unique(dat$`Time Point`))
+    getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
+    
     #plot figure
     plots <- ggplot(data = dat.Target,
-        # group lets `ggplot` know we want different errorbars/bars for each day
-        aes(x = Treatment, y = `Relative Shift`, 
-            group = interaction(factor(`Time Point`), factor(`Cell Line`)))) +
-        geom_bar(stat = "identity", aes(fill = interaction(factor(`Time Point`), 
-            factor(`Cell Line`))), position = position_dodge(width = 0.9)) +
+				aes(x = Treatment, y = `Relative Shift`,
+				fill = interaction(factor(`Time Point`), factor(`Cell Line`)),
+				group = interaction(factor(`Time Point`), factor(`Cell Line`)))) +
+        geom_bar(stat = "identity", position = "dodge") +
         ylab("Net Shift (pm)") +
-        geom_errorbar(limits, width = 0.4, size = 0.3,
-            position = position_dodge(width = 0.9)) +
+        geom_errorbar(limits,position = position_dodge(width = 0.9), 
+                      width = 0.4) +
         theme_bw() + theme(panel.grid = element_blank(), 
-            axis.title.x=element_blank()) + 
-        theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-    #configure legend
-    plots <- plots + scale_fill_discrete(name="Cell Line and Treatment", 
+				axis.title.x=element_blank()) + 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+        scale_fill_manual(values = getPalette, name="Cell Line and Treatment", 
                 labels=c("GBM-6 1 h Treatment", "GBM-6 24 h Treatment", 
                 "GBM-26 1 h Treatment", "GBM-26 24 h Treatment")) + 
-                theme(legend.key = element_rect(colour = 'white',
-                    fill = 'white'), legend.key.size = unit(0.4, "cm")) 
-    plots            
-    #save figure
+        theme(legend.key = element_rect(colour = 'white',
+                fill = 'white'), legend.key.size = unit(0.4, "cm")) +
+        ggtitle(paste('Target: ', targetList[i], sep=''))
+    
+    #plot figure, uncomment to plot
+    plots
+                
+    #save figure, uncomment to plot
     #filename = paste(targetList[i], 'png', sep='.')
     #ggsave(plots, file = filename, width = 8, height = 6)
 }
-plotByTarget(3)
+plotEachTarget(3)
 ```
 
-###Plot by Time Point
-Another function was written to plot data by Time Point instead of Target.
+###Plot Each Time Point
+
+The following function plots Treatment versus Relative Shift, grouping by Target. Each Time Point and Cell Line is plotted separately.
 
 ```{r}
-plotByTimepoint <- function(i, j){
+plotEachTimepoint <- function(i, j, filename = "CompiledAveraged.csv"){
+    library(readr)
+    library(ggplot2)
+    library(RColorBrewer)
     
     #create lists for data islation
     timepointList <- unique(dat$`Time Point`)
@@ -87,33 +103,147 @@ plotByTimepoint <- function(i, j){
     limits <- aes(ymax = `Relative Shift` + `Standard Deviation`, 
                   ymin = `Relative Shift` - `Standard Deviation`)
     
-    #plot colors
-    extPalette <- c("#771155", "#AA4488", "#CC99BB", "#114477", "#4477AA", 
-                   "#77AADD", "#117777", "#44AAAA", "#77CCCC", "#117744", 
-                   "#44AA77", "#88CCAA", "#774411", "#AA7744", "#DDAA77", 
-                   "#771122", "#AA4455", "#DD7788")
+    #set colors for plot
+    colorCount <- length(unique(dat$Target))
+    getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
     
-    #plot figure settings
+    #configure plot, colors, and legend
     plots <- ggplot(data = dat.Timepoint,
         # group lets `ggplot` know we want different errorbars/bars for each day
-        aes(x = Treatment, y = `Relative Shift`, group = factor(Target))) +
-        geom_bar(stat = "identity", position = position_dodge(width = 0.9), 
-                 aes(fill = factor(Target))) +
+        aes(x = Treatment, y = `Relative Shift`, fill = factor(Target))) +
+        geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
         ylab("Net Shift (pm)") +
+        scale_fill_manual(values = getPalette, name = 'Target') +
         geom_errorbar(limits, width = 0.4, size = 0.3, colour = 'grey',
                       position = position_dodge(width = 0.9)) +
         theme_bw() + theme(panel.grid = element_blank(), 
                            axis.title.x=element_blank()) + 
-        theme(axis.text.x = element_text(angle = 45, hjust = 1))
-    
-    #format plot legend and colors
-    plots <- plots + theme(legend.key = element_rect(colour = 'white', 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        theme(legend.key = element_rect(colour = 'white', 
                 fill = 'white'), legend.key.size = unit(0.4, "cm")) +
-                scale_fill_manual(values = extPalette) + scale_fill_discrete(name="Target")
+        ggtitle(paste('Cell Line: ', cellLineList[j], 
+                      ' Time Point: ', timepointList[i], sep=''))
+    
+    #plot figure, uncomment to plot
     plots
-    #save figure
+    
+    #save figure, uncomment to save
     #filename = paste(timepointList[i],cellLineList[j], 'png', sep='.')
     #ggsave(plots, file = filename, width = 8, height = 6)
 }
-plotByTimepoint(1,1)
+plotEachTimepoint(1,1)
 ```
+
+##All Data Plotted by Target
+
+###Hydroxy-HIF-1$\alpha$
+
+>Hypoxia-inducible factor 1 (HIF1) is a heterodimeric transcription factor that plays a critical role in the cellular response to hypoxia (1). The HIF1 complex consists of two subunits, HIF-1$\alpha$ and HIF-1$\beta$, which are basic helix-loop-helix proteins of the PAS (Per, ARNT, Sim) family (2). HIF1 regulates the transcription of a broad range of genes that facilitate responses to the hypoxic environment, including genes regulating angiogenesis, erythropoiesis, cell cycle, metabolism, and apoptosis. The widely expressed HIF-1$\alpha$ is typically degraded rapidly in normoxic cells by the ubiquitin/proteasomal pathway. Under normoxic conditions, HIF-1$\alpha$ is proline hydroxylated leading to a conformational change that promotes binding to the von Hippel Lindau protein (VLH) E3 ligase complex; ubiquitination and proteasomal degradation follows (3,4). Both hypoxic conditions and chemical hydroxylase inhibitors (such as desferrioxamine and cobalt) inhibit HIF-1$\alpha$ degradation and lead to its stabilization. In addition, HIF-1$\alpha$ can be induced in an oxygen-independent manner by various cytokines through the PI3K-AKT-mTOR pathway. *(Quoted from [Cell Signaling](https://www.cellsignal.com/products/primary-antibodies/hydroxy-hif-1a-pro564-d43b5-xp-rabbit-mab/3434))*
+
+```{r} 
+plotEachTarget(1)
+```
+
+###Phospho-Akt Thr308
+
+```{r}
+plotEachTarget(2)
+```
+
+###Phospho-Akt Ser473
+
+```{r}
+plotEachTarget(3)
+```
+
+###Phospho-c-Abl Tyr412
+
+```{r}
+plotEachTarget(4)
+```
+
+###Phospho-GSK-3$\beta$ Ser9
+
+```{r}
+plotEachTarget(5)
+```
+
+###Phospho-p44/42 MAPK (Erk1/2) Thr202/Tyr204
+
+```{r}
+plotEachTarget(6)
+```
+
+###Phospho-mTOR Ser2448
+
+```{r}
+plotEachTarget(7)
+```
+
+###Phospho-p53 Ser15
+
+```{r}
+plotEachTarget(8)
+```
+
+###Phospho-p70 S6 Kinase Thr389
+
+```{r}
+plotEachTarget(9)
+```
+
+###Phospho-PDK1 Ser241
+
+```{r}
+plotEachTarget(10)
+```
+
+###Phospho-Rb Ser780
+
+```{r}
+plotEachTarget(11)
+```
+
+###Phospho-Rb Ser807/811
+
+```{r}
+plotEachTarget(12)
+```
+
+###Phospho-S6 Ribosomal Protein Ser235/236
+
+```{r}
+plotEachTarget(13)
+```
+
+###Phospho-S6 Ribosomal Protein Ser240/244
+
+```{r}
+plotEachTarget(14)
+```
+
+###Phospho-Src Family Tyr416
+
+```{r}
+plotEachTarget(15)
+```
+
+##All Data Plotted by Treatment and Cell Line
+
+```{r}
+plotEachTimepoint(1,1)
+```
+
+```{r}
+plotEachTimepoint(1,2)
+```
+
+```{r}
+plotEachTimepoint(2,1)
+```
+
+```{r}
+plotEachTimepoint(2,2)
+```
+
+

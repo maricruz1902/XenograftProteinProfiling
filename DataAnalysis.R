@@ -1,6 +1,6 @@
 getData <- function(){
     library(readr)
-    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
+    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged_NoSerumNoMinSerum.csv"
     filename <- basename(url)
     download.file(url,destfile=filename)
     dat <- read_csv(filename, col_types = cols())
@@ -324,21 +324,21 @@ go <- function(){
     dat <- getData()
     numTargets <- length(unique(dat$Target))
     for(i in 1:numTargets){
-        plotEachTarget(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
+        plotEachTarget(i, filename = "Combined_Averaged_NoSerumNoMinSerum.csv")
     }
     numTimepoints <- length(unique(dat$`Time Point`))
     numCellLines <- length(unique(dat$`Cell Line`))
     for(i in 1:numTimepoints){
         for (j in 1:numCellLines){
-            plotEachTimepoint(i, j, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
+            plotEachTimepoint(i, j, filename = "Combined_Averaged_NoSerumNoMinSerum.csv")
         }
     }
     for(i in 1:2){
-        plotEachCellLine(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
-        heatmapCellLine(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
-        heatmapTimePoint(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
+        plotEachCellLine(i, filename = "Combined_Averaged_NoSerumNoMinSerum.csv")
+        heatmapCellLine(i, filename = "Combined_Averaged_NoSerumNoMinSerum.csv")
+        heatmapTimePoint(i, filename = "Combined_Averaged_NoSerumNoMinSerum.csv")
     }
     for(i in 1:4){
-        heatmapCellTime(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
+        heatmapCellTime(i, filename = "Combined_Averaged_NoSerumNoMinSerum.csv")
     }
 }

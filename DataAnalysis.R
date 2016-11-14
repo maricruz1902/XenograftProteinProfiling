@@ -12,7 +12,9 @@ plotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
     library(RColorBrewer)
     
     #import data
-    #dat <- read_csv(filename)
+    dat <- read_csv(filename, col_types = cols())
+    
+    #create lists for data islation
     targetList <- unique(dat$Target)
     dat.Target <- dat[dat$Target == targetList[i],]
     
@@ -52,10 +54,13 @@ plotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
     ggsave(plots, file = filename, width = 8, height = 6)
 }
 
-plotEachTimepoint <- function(i, j, filename = "CompiledAveraged.csv"){
+plotEachTimepoint <- function(i, j, filename = "Combined_Averaged.csv"){
     library(readr)
     library(ggplot2)
     library(RColorBrewer)
+    
+    #import data
+    dat <- read_csv(filename, col_types = cols())
     
     #create lists for data islation
     timepointList <- unique(dat$`Time Point`)
@@ -96,15 +101,12 @@ plotEachTimepoint <- function(i, j, filename = "CompiledAveraged.csv"){
     ggsave(plots, file = filename, width = 8, height = 6)
 }
 
-heatmapCellTime <- function(){
+heatmapCellTime <- function(filename = "Combined_Averaged.csv"){
     library(readr)
     library(ggplot2)
     library(dplyr)
     
     #get data
-    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
-    filename <- basename(url)
-    download.file(url,destfile=filename)
     dat <- read_csv(filename, col_types = cols())
     
     #create necessary lists and matrix
@@ -150,15 +152,12 @@ heatmapCellTime <- function(){
     }
 }
 
-heatmapCellLine <- function(){
+heatmapCellLine <- function(filename = "Combined_Averaged.csv"){
     library(readr)
     library(ggplot2)
     library(dplyr)
     
     #get data
-    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
-    filename <- basename(url)
-    download.file(url,destfile=filename)
     dat <- read_csv(filename, col_types = cols())
     
     #create necessary lists and matrix
@@ -206,15 +205,12 @@ heatmapCellLine <- function(){
     }
 }
 
-heatmapTimePoint <- function(){
+heatmapTimePoint <- function(filename = "Combined_Averaged.csv"){
     library(readr)
     library(ggplot2)
     library(dplyr)
     
     #get data
-    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
-    filename <- basename(url)
-    download.file(url,destfile=filename)
     dat <- read_csv(filename, col_types = cols())
     
     #create necessary lists and matrix

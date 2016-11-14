@@ -4,7 +4,11 @@ aggData <- function() {
     ## get the working directory
     directory <- getwd()
     groupList <- seq(1:34)
-    groupNames <- read.csv("C:/Users/James/Desktop/groupNames.csv")
+    url <- "https://raw.githubusercontent.com/jwade1221/
+    XenograftProteinProfiling/master/groupNames.csv"
+    filename <- basename(url)
+    download.file(url,destfile=filename)
+    groupNames <- read_csv(filename, col_types = cols())
     holder <- cbind(groupNames, groupList)
     
     ## delete unnecessary files

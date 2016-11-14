@@ -4,6 +4,7 @@ getData <- function(){
     filename <- basename(url)
     download.file(url,destfile=filename)
     dat <- read_csv(filename, col_types = cols())
+    dat
 }
 
 plotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
@@ -323,21 +324,21 @@ go <- function(){
     dat <- getData()
     numTargets <- length(unique(dat$Target))
     for(i in 1:numTargets){
-        plotEachTarget(i, filename = "Combined_Averaged.csv")
+        plotEachTarget(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
     }
     numTimepoints <- length(unique(dat$`Time Point`))
     numCellLines <- length(unique(dat$`Cell Line`))
     for(i in 1:numTimepoints){
         for (j in 1:numCellLines){
-            plotEachTimepoint(i, j, filename = "Combined_Averaged.csv")
+            plotEachTimepoint(i, j, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
         }
     }
     for(i in 1:2){
-        plotEachCellLine(i, filename = "Combined_Averaged.csv")
-        heatmapCellLine(i, filename = "Combined_Averaged.csv")
-        heatmapTimePoint(i, filename = "Combined_Averaged.csv")
+        plotEachCellLine(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
+        heatmapCellLine(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
+        heatmapTimePoint(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
     }
     for(i in 1:4){
-        heatmapCellTime(i, filename = "Combined_Averaged.csv")
+        heatmapCellTime(i, filename = "Combined_Averaged_NoSerumNoDMSO.csv")
     }
 }

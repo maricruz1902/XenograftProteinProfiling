@@ -47,11 +47,11 @@ plotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
         ggtitle(paste('Target: ', targetList[i], sep=''))
     
     #plot figure, uncomment to plot
-    plots
+    #plots
                 
     #save figure, uncomment to save
-    #filename = paste(targetList[i], 'png', sep='.')
-    #ggsave(plots, file = filename, width = 8, height = 6)
+    filename = paste(targetList[i], 'png', sep='.')
+    ggsave(plots, file = filename, width = 8, height = 6)
 }
 
 plotEachTimepoint <- function(i, j, filename = "Combined_Averaged.csv"){
@@ -91,15 +91,60 @@ plotEachTimepoint <- function(i, j, filename = "Combined_Averaged.csv"){
         theme(legend.key = element_rect(colour = 'white', 
                 fill = 'white'), legend.key.size = unit(0.4, "cm")) +
         ggtitle(paste('Cell Line: ', cellLineList[j], 
-                      'Time Point: ', timepointList[i], sep=''))
+                      ' Time Point: ', timepointList[i], sep=''))
     
     #plot figure, uncomment to plot
-    plots
+    #plots
     
     #save figure, uncomment to save
-    #filename = paste(timepointList[i],cellLineList[j], 'png', sep='.')
-    #ggsave(plots, file = filename, width = 8, height = 6)
+    filename = paste(timepointList[i],cellLineList[j], 'png', sep='.')
+    ggsave(plots, file = filename, width = 8, height = 6)
 }
+
+plotEachCellLine <- function(i, filename = "Combined_Averaged.csv"){
+    library(readr)
+    library(ggplot2)
+    library(RColorBrewer)
+    
+    #import data
+    dat <- read_csv(filename, col_types = cols())
+    
+    #create lists for data islation
+    cellLineList <- unique(dat$`Cell Line`)
+    dat.Timepoint <- dat[dat$`Cell Line` == cellLineList[i],]
+    
+    #set error bars
+    limits <- aes(ymax = `Relative Shift` + `Standard Deviation`, 
+                  ymin = `Relative Shift` - `Standard Deviation`)
+    
+    #set colors for plot
+    colorCount <- length(unique(dat$Target)) * length(unique(dat$`Time Point`))
+    getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
+    
+    #configure plot, colors, and legend
+    plots <- ggplot(data = dat.Timepoint,
+        aes(x = Treatment, y = `Relative Shift`, fill = interaction(factor(Target),
+                factor(`Time Point`)))) +
+        geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+        ylab("Net Shift (pm)") +
+        scale_fill_manual(values = getPalette, name = 'Target') +
+        geom_errorbar(limits, width = 0.4, size = 0.3, colour = 'grey40',
+                      position = position_dodge(width = 0.9)) +
+        theme_bw() + theme(panel.grid = element_blank(), 
+                           axis.title.x=element_blank()) + 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        theme(legend.key = element_rect(colour = 'white', 
+                                        fill = 'white'), legend.key.size = unit(0.4, "cm")) +
+        ggtitle(paste('Cell Line: ', cellLineList[i], sep=''))
+    
+    #plot figure, uncomment to plot
+    #plots
+    
+    #save figure, uncomment to save
+    filename = paste(cellLineList[i], 'png', sep='.')
+    ggsave(plots, file = filename, width = 12, height = 6)
+}
+
 
 heatmapCellTime <- function(i, filename = "Combined_Averaged.csv"){
     library(readr)
@@ -149,13 +194,13 @@ heatmapCellTime <- function(i, filename = "Combined_Averaged.csv"){
                       ' h', sep=''))
     
     #plot figure, uncomment to plot
-    plots
+    #plots
     
     #write csv file and save figure, uncomment to save
-    #filename <- paste("heatmap_", cLL.i, '_', tPL.i, sep='')
-    #write_csv(df, paste(filename, '.csv', sep=''))
-    #ggsave(plots, file = paste(filename, '.png', sep=''), 
-    #      width = 10, height = 6)
+    filename <- paste("heatmap_", cLL.i, '_', tPL.i, sep='')
+    write_csv(df, paste(filename, '.csv', sep=''))
+    ggsave(plots, file = paste(filename, '.png', sep=''), 
+          width = 10, height = 6)
 }
 
 heatmapCellLine <- function(i, filename = "Combined_Averaged.csv"){
@@ -207,13 +252,13 @@ heatmapCellLine <- function(i, filename = "Combined_Averaged.csv"){
         ggtitle(paste('Cell Line: GBM-', cLL.i, sep=''))
     
     #plot figure, uncomment to plot
-    plots
+    #plots
     
     #write csv file and save figure, uncomment to save
-    #filename <- paste("heatmap_", cLL.i, sep='')
-    #write_csv(df, paste(filename, '.csv', sep=''))
-    #ggsave(plots, file = paste(filename, '.png', sep=''), 
-    #       width = 10, height = 6)
+    filename <- paste("heatmap_", cLL.i, sep='')
+    write_csv(df, paste(filename, '.csv', sep=''))
+    ggsave(plots, file = paste(filename, '.png', sep=''), 
+           width = 10, height = 6)
 }
 
 heatmapTimePoint <- function(i, filename = "Combined_Averaged.csv"){
@@ -267,7 +312,6 @@ heatmapTimePoint <- function(i, filename = "Combined_Averaged.csv"){
     #plot figure, uncomment to plot
     #plots
     
-    
     #write csv file and save figure, uncomment to save
     filename <- paste("heatmap_", tPL.i, sep='')
     write_csv(df, paste(filename, '.csv', sep=''))
@@ -279,16 +323,21 @@ go <- function(){
     dat <- getData()
     numTargets <- length(unique(dat$Target))
     for(i in 1:numTargets){
-        plotEachTarget(i)
+        plotEachTarget(i, filename = "Combined_Averaged.csv")
     }
     numTimepoints <- length(unique(dat$`Time Point`))
     numCellLines <- length(unique(dat$`Cell Line`))
     for(i in 1:numTimepoints){
         for (j in 1:numCellLines){
-            plotEachTimepoint(i, j)
+            plotEachTimepoint(i, j, filename = "Combined_Averaged.csv")
         }
     }
-    heatmapCellLine()
-    heatmapCellTime()
-    heatmapTimePoint()
+    for(i in 1:2){
+        plotEachCellLine(i, filename = "Combined_Averaged.csv")
+        heatmapCellLine(i, filename = "Combined_Averaged.csv")
+        heatmapTimePoint(i, filename = "Combined_Averaged.csv")
+    }
+    for(i in 1:4){
+        heatmapCellTime(i, filename = "Combined_Averaged.csv")
+    }
 }

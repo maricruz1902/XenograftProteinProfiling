@@ -3,16 +3,15 @@ aggData <- function() {
     
     ## get the working directory
     directory <- getwd()
-    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames.csv"
+    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
     filename <- basename(url)
     download.file(url,destfile=filename)
     recipe <- read_csv(filename, col_types = cols())
     groupNames <- recipe$groupNames
     holder <- recipe[,c(1,2)]
-    
     ## delete unnecessary files
     unlink("comments.csv", recursive = TRUE)
-    unlink("groupNames.csv", recursive = TRUE)
+    unlink("groupNames*", recursive = TRUE)
     #unlink("allRings.csv", recursive = TRUE)
     #unlink("netShifts.csv", recursive = TRUE)
     #unlink("*.txt", recursive = TRUE)

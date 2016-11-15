@@ -4,15 +4,16 @@ aggData <- function() {
     ## get the working directory
     directory <- getwd()
     groupList <- seq(1:34)
-    url <- "https://raw.githubusercontent.com/jwade1221/
-    XenograftProteinProfiling/master/groupNames.csv"
+    url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames.csv"
     filename <- basename(url)
     download.file(url,destfile=filename)
-    groupNames <- read_csv(filename, col_types = cols())
-    holder <- cbind(groupNames, groupList)
+    recipe <- read.csv(filename, col_types = cols())
+    groupNames <- recipe$groupNames
+    holder <- recipe[,c(1,2)]
     
     ## delete unnecessary files
     unlink("comments.csv", recursive = TRUE)
+    unlink("groupNames.csv", recursive = TRUE)
     #unlink("allRings.csv", recursive = TRUE)
     #unlink("netShifts.csv", recursive = TRUE)
     #unlink("*.txt", recursive = TRUE)
@@ -89,25 +90,30 @@ plotRingData <- function(){
 
 getNetShifts <- function(){
     library(readr)
-    
     directory <- getwd()
     dat <- read_csv("../plots/allRings.csv", col_types = cols())
+    ringList <- unique(dat$ring)
     time1 <- 52
     time2 <- 39
-    time1.low <- time1 - 0.075
-    time1.high <- time1 + 0.075
-    time2.low <- time2 - 0.075
-    time2.high <- time2 + 0.075
-    dat.tmp <- as.data.frame(c(dat[dat$time < time1.high & dat$time > time1.low, ], 
-                               dat[dat$time < time2.high & dat$time > time2.low, ]))
-    keepCols <- c('ring', 'group', 'time', 'shift','groupName', 'time.1', 'shift.1')
-    dat.rings <- dat.tmp[keepCols]
-    colnames(dat.rings)[6] <- c("time.1")
-    colnames(dat.rings)[7] <- c("shift.1")
-    dat.rings$netShifts <- dat.rings$shift - dat.rings$shift.1
+    dat.rings <- data.frame()
+    for (i in ringList){
+        dat.ring <- filter(dat, ring == i)
+        time1.loc <- which.min(abs(dat.ring$time - time1))
+        time1.val <- dat.ring$shift[time1.loc]
+        time2.loc <- which.min(abs(dat.ring$time - time2))
+        time2.val <- dat.ring$shift[time2.loc]
+        ring <- i
+        group <- unique(dat.ring$group)
+        groupName <- unique(dat.ring$groupName)
+        tmp <- data.frame(i, group, groupName, time1.val, time2.val)
+        dat.rings <- rbind(dat.rings, tmp)
+    }
+    names(dat.rings) <- c("ring", "group", "groupName", "shift.1", "shift.2")
+    dat.rings$netShifts <- dat.rings$shift.1 - dat.rings$shift.2
     
     #write 'netShifts.csv' in ../plots/
-    if (file.exists("../plots")){setwd("../plots")
+    if (file.exists("../plots")){
+        setwd("../plots")
     } else {
         dir.create("../plots")
         setwd("../plots")
@@ -135,7 +141,7 @@ plotNetShifts <- function(){
                        axis.title.x=element_blank()) + 
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
         theme(legend.key = element_rect(colour = 'white',
-            fill = 'white'), legend.key.size = unit(0.4, "cm"))
+            fill = 'white'), legend.key.size = unit(0.3, "cm"))
     
     #save plot, uncomment to save
     filename <- "NetShiftTest.png"
@@ -146,7 +152,7 @@ plotNetShifts <- function(){
             setwd("../plots")
     }
     
-    ggsave(plots, file = filename, width = 8, height = 6)
+    ggsave(plots, file = filename, width = 10, height = 6)
     setwd(directory)
 }
 
@@ -222,10 +228,12 @@ plotAvgShifts <- function(){
 }
 
 go <- function(){
+    directory <- getwd()
     aggData()
     plotRingData()
     getNetShifts()
     plotNetShifts()
     getAvgShifts()
     plotAvgShifts()
+    setwd(directory)
 }

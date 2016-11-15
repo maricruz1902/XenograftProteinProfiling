@@ -60,8 +60,8 @@ plotRingData <- function(){
     getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
     
     #configure plot and legend
-    plots <- ggplot(dat) + 
-        geom_point(aes(time, shift, colour = factor(groupName))) +
+    plots <- ggplot(dat, aes(time, shift, colour = factor(groupName))) + 
+        geom_point(size = 1) +
         xlab("Time (min)") + 
         ylab(expression(paste("Relative Shift (", Delta,"pm)"))) +
         scale_colour_manual(values = getPalette, name = 'Target') +
@@ -91,8 +91,8 @@ getNetShifts <- function(){
     directory <- getwd()
     dat <- read_csv("../plots/allRings.csv", col_types = cols())
     ringList <- unique(dat$ring)
-    time1 <- 52
-    time2 <- 39
+    time1 <- 72
+    time2 <- 53
     dat.rings <- data.frame()
     for (i in ringList){
         dat.ring <- filter(dat, ring == i)

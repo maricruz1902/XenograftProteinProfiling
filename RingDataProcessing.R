@@ -3,11 +3,10 @@ aggData <- function() {
     
     ## get the working directory
     directory <- getwd()
-    groupList <- seq(1:34)
     url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames.csv"
     filename <- basename(url)
     download.file(url,destfile=filename)
-    recipe <- read.csv(filename, col_types = cols())
+    recipe <- read_csv(filename, col_types = cols())
     groupNames <- recipe$groupNames
     holder <- recipe[,c(1,2)]
     
@@ -34,7 +33,7 @@ aggData <- function() {
         ring <- rep(ringNum, nrow(dat))
         group <- rep(groupNum, nrow(dat))
         if (groupNum == 35){groupNum <- 34}
-        groupName <- as.character(holder$Target[[groupNum]])
+        groupName <- as.character(holder$groupNames[[groupNum]])
         groupName <- rep(groupName, nrow(dat))
         tmp <- data.frame(ring, group, time, shift, groupName)
         df <- rbind(df, tmp)

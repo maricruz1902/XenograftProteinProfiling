@@ -64,7 +64,7 @@ plotRingData <- function(){
     plots <- ggplot(dat) + 
         geom_point(aes(time, shift, colour = factor(groupName))) +
         xlab("Time (min)") + 
-        ylab(expression(paste("Relative Shift ( ", Delta,"pm)"))) +
+        ylab(expression(paste("Relative Shift (", Delta,"pm)"))) +
         scale_colour_manual(values = getPalette, name = 'Target') +
         theme_bw() + theme(panel.grid = element_blank(), 
             axis.title.x=element_blank()) + 

@@ -3,19 +3,13 @@ aggData <- function(loc = 'plots') {
     
     ## get the working directory
     directory <- getwd()
-    #url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
-    #filename <- basename(url)
-    #download.file(url,destfile=filename)
-    #recipe <- read_csv(filename, col_types = cols())
     recipe <- read_csv("D:/Google Drive/Research/GitRepositories/XenograftProteinProfiling/groupNames_XPP.csv", col_types = cols())
     groupNames <- recipe$groupNames
     holder <- recipe[,c(1,2)]
-    ## delete unnecessary files
-    unlink("comments.csv", recursive = TRUE)
-    unlink("groupNames*", recursive = TRUE)
-    unlink("plots", recursive = TRUE)
-    unlink(loc, recursive = TRUE)
+
     rings <- list.files(directory)
+    remove <- c('plots','comments.csv','corrected')
+    rings <- rings[!rings %in% remove]
     
     ## create empty data frame
     df <- data.frame()
@@ -426,6 +420,55 @@ plotAvgShifts <- function(loc = 'plots'){
     setwd(directory)
 }
 
+removeRings <- function(loc = 'corrected'){
+    library(readr)
+    
+    if(loc == 'plots'){break}
+    
+    directory <- getwd()
+    
+    recipe <- read_csv("D:/Google Drive/Research/GitRepositories/XenograftProteinProfiling/groupNames_XPP.csv",
+                       col_types = cols())
+    removeRings <- as.numeric(read_csv("plots/tossedRings.csv", col_types = cols()))
+    groupNames <- recipe$groupNames
+    holder <- recipe[,c(1,2)]
+    rings <- list.files(directory)
+    removeRings <- paste(removeRings, '.csv', sep='')
+    remove <- c(removeRings, 'plots', 'comments.csv')
+    rings <- rings[!rings %in% remove]
+    
+    ## create empty data frame
+    df <- data.frame()
+    ## add data to data frame corresponding to id
+    for (i in rings) {
+        ring <- as.vector(i)
+        dat <- read_csv(ring, col_types = cols(), col_names = FALSE)
+        time <- dat[ ,1]
+        shift <- dat[ ,2]
+        ringStr <- strsplit(i, "\\.")[[1]]
+        ringNum <- as.numeric(ringStr[1])
+        groupNum <- (ringNum - 1) %/% 4 + 1
+        ring <- rep(ringNum, nrow(dat))
+        group <- rep(groupNum, nrow(dat))
+        if (groupNum == 35){groupNum <- 34}
+        groupName <- as.character(holder$groupNames[[groupNum]])
+        groupName <- rep(groupName, nrow(dat))
+        tmp <- data.frame(ring, group, time, shift, groupName)
+        df <- rbind(df, tmp)
+    }
+    names(df) <- c("ring", "group", "time", "shift", "groupName")
+    
+    if (file.exists(loc)){
+        setwd(loc)
+    } else {
+        dir.create(loc)
+        setwd(loc)
+    }
+    
+    write_csv(df, "allRings.csv")
+    setwd(directory)
+}
+
 go <- function(location = 'plots'){
     library(ggplot2)
     library(readr)
@@ -433,8 +476,11 @@ go <- function(location = 'plots'){
     library(dplyr)
     
     directory <- getwd()
-    
-    aggData(loc = location)
+    if(location != 'plots'){
+        removeRings(loc = location)
+    } else{
+        aggData()
+    }
     thermalControl(loc = location)
     plotRingData(loc = location)
     getNetShifts(loc = location)
@@ -456,6 +502,9 @@ analyzeFullDataSet <- function(){
         setwd(tempDir)
         #print(getwd())
         go()
+        if (file.exists('tossedRings.csv')){
+            go(location = "corrected")
+        }
         setwd(directory)
     }
 }

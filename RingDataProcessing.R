@@ -135,8 +135,8 @@ getNetShifts <- function(thermal = TRUE){
         dat <- read_csv("plots/allRings.csv", col_types = cols())
     }
     ringList <- unique(dat$ring)
-    time1 <- 72
-    time2 <- 53
+    time1 <- 52
+    time2 <- 39
     dat.rings <- data.frame()
     for (i in ringList){
         dat.ring <- filter(dat, ring == i)
@@ -292,8 +292,83 @@ plotBadClusters <- function(){
             setwd("plots")
         }
         ggsave(plots, file = filename, width = 10, height = 6)
+        write_csv(dat.bad, 'badRings.csv')
         setwd(directory)
     }
+}
+
+grubbs <- function (x, type = 10, opposite = FALSE, two.sided = FALSE){
+    if (sum(c(10, 11, 20) == type) == 0) 
+        stop("Incorrect type")
+    DNAME <- deparse(substitute(x))
+    x <- sort(x[complete.cases(x)])
+    n <- length(x)
+    if (type == 11) {
+        g <- (x[n] - x[1])/sd(x)
+        u <- var(x[2:(n - 1)])/var(x) * (n - 3)/(n - 1)
+        pval = 1 - pgrubbs(g, n, type = 11)
+        method <- "Grubbs test for two opposite outliers"
+        alt = paste(x[1], "and", x[n], "are outliers")
+    }
+    else if (type == 10) {
+        if (xor(((x[n] - mean(x)) < (mean(x) - x[1])), opposite)) {
+            alt = paste("lowest value", x[1], "is an outlier")
+            o <- x[1]
+            d <- x[2:n]
+        }
+        else {
+            alt = paste("highest value", x[n], "is an outlier")
+            o <- x[n]
+            d <- x[1:(n - 1)]
+        }
+        g <- abs(o - mean(x))/sd(x)
+        u <- var(d)/var(x) * (n - 2)/(n - 1)
+        pval <- 1 - pgrubbs(g, n, type = 10)
+        method <- "Grubbs test for one outlier"
+    }
+    else {
+        if (xor(((x[n] - mean(x)) < (mean(x) - x[1])), opposite)) {
+            alt = paste("lowest values", x[1], ",", x[2], "are outliers")
+            u <- var(x[3:n])/var(x) * (n - 3)/(n - 1)
+        }
+        else {
+            alt = paste("highest values", x[n - 1], ",", x[n], 
+                        "are outliers")
+            u <- var(x[1:(n - 2)])/var(x) * (n - 3)/(n - 1)
+        }
+        g <- NULL
+        pval <- pgrubbs(u, n, type = 20)
+        method <- "Grubbs test for two outliers"
+    }
+    if (two.sided) {
+        pval <- 2 * pval
+        if (pval > 1) 
+            pval <- 2 - pval
+    }
+    RVAL <- list(statistic = c(G = g, U = u), alternative = alt, 
+                 p.value = pval, method = method, data.name = DNAME, val = o)
+    class(RVAL) <- "htest"
+    return(RVAL)
+    return(o)
+}
+
+identifyOutliers <- function(){
+    library(readr)
+    library(outliers)
+    library(dplyr)
+    
+    dat <- read_csv('plots/badRings.csv', col_types = cols())
+    badClusters <- unique(dat$group)
+    head(dat)
+    dat.m <- as.matrix(dat)
+    dat.m
+    
+    dat.cluster <- filter(dat, group == 27) %>% select(netShifts) %>% unlist()
+    outliers <- grubbs(dat.cluster)
+    outliers$val
+    outlier <- unlist(strsplit(outliers$alternative, split=' ', fixed=TRUE))[3]
+    ring.outlier <- filter(dat, netShifts == outliers$val) %>% select(ring)
+    ring.outlier
 }
 
 plotAvgShifts <- function(){
@@ -352,9 +427,9 @@ go <- function(){
     getNetShifts()
     plotNetShifts()
     getAvgShifts()
+    plotAvgShifts()
     findBadClusters()
     plotBadClusters()
-    plotAvgShifts()
     setwd(directory)
 }
 

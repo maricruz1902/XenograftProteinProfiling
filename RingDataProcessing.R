@@ -1,3 +1,11 @@
+getNames <- function(){
+    directory <- basename(getwd())
+    name <- unlist(strsplit(directory, split = "_"))
+    name <- name[2]
+    name <- gsub('gask','',name)
+    name
+}
+
 aggData <- function(loc = 'plots') {
     library(readr)
     
@@ -7,9 +15,7 @@ aggData <- function(loc = 'plots') {
     groupNames <- recipe$groupNames
     holder <- recipe[,c(1,2)]
 
-    rings <- list.files(directory)
-    remove <- c('plots','comments.csv','corrected')
-    rings <- rings[!rings %in% remove]
+    rings <- list.files(directory, pattern = ".csv")
     
     ## create empty data frame
     df <- data.frame()
@@ -24,7 +30,6 @@ aggData <- function(loc = 'plots') {
         groupNum <- (ringNum - 1) %/% 4 + 1
         ring <- rep(ringNum, nrow(dat))
         group <- rep(groupNum, nrow(dat))
-        if (groupNum == 35){groupNum <- 34}
         groupName <- as.character(holder$groupNames[[groupNum]])
         groupName <- rep(groupName, nrow(dat))
         tmp <- data.frame(ring, group, time, shift, groupName)
@@ -39,7 +44,7 @@ aggData <- function(loc = 'plots') {
         setwd(loc)
     }
     
-    write_csv(df, "allRings.csv")
+    write_csv(df, paste(name, "allRings.csv", sep="_"))
     setwd(directory)
 }
 
@@ -48,7 +53,8 @@ thermalControl <- function(loc = 'plots'){
     library(dplyr)
     
     directory = getwd()
-    dat <- read_csv(paste(loc, "/allRings.csv", sep = ''), col_types = cols())
+    dat <- read_csv(paste(loc, "/", name, "_", "allRings.csv", sep = ''), 
+                    col_types = cols())
     
     #get thermal control averages
     thermals <- filter(dat, groupName == "thermal")
@@ -72,7 +78,7 @@ thermalControl <- function(loc = 'plots'){
         dat[dat$ring == i, 4] <- ringTC
     }
     
-    write_csv(dat, paste(loc, "/allRings_tc.csv", sep = ''))
+    write_csv(dat, paste(loc,"/", name, "_", "allRings_tc.csv", sep = ''))
     
 }
 
@@ -83,7 +89,8 @@ plotRingData <- function(thermal = TRUE, loc = 'plots'){
     
     directory <- getwd()
     if (thermal == TRUE){
-    dat <- read_csv(paste(loc, "/allRings_tc.csv", sep=''), col_types = cols())
+    dat <- read_csv(paste(loc, "/", name, "_", "allRings_tc.csv", sep=''), 
+                    col_types = cols())
     } else {
         dat <- read_csv(paste(loc, "/allRings.csv", sep=''), col_types = cols())
     }
@@ -106,7 +113,7 @@ plotRingData <- function(thermal = TRUE, loc = 'plots'){
     #plots
     
     #save plot, uncomment to save
-    filename <- "AllRingsTest.png"
+    filename <- paste(name, "AllRings.png", sep="_")
     newDir <- loc
     if (file.exists(loc)){
         setwd(loc)
@@ -119,15 +126,18 @@ plotRingData <- function(thermal = TRUE, loc = 'plots'){
     setwd(directory)
 }
 
-getNetShifts <- function(thermal = TRUE, loc = plots, time1 = 52, time2 = 39){
+getNetShifts <- function(thermal = TRUE, loc = 'plots', 
+                         time1 = 52, time2 = 39){
     library(readr)
     library(dplyr)
     
     directory <- getwd()
     if (thermal == TRUE){
-        dat <- read_csv(paste(loc, "/allRings_tc.csv", sep=''), col_types = cols())
+        dat <- read_csv(paste(loc, "/", name, "_", "allRings_tc.csv", sep=""), 
+                        col_types = cols())
     } else {
-        dat <- read_csv(paste(loc, "/allRings.csv", sep=''), col_types = cols())
+        dat <- read_csv(paste(loc, "/", name, "_", "allRings.csv", sep=''), 
+                        col_types = cols())
     }
     ringList <- unique(dat$ring)
     dat.rings <- data.frame()
@@ -153,7 +163,7 @@ getNetShifts <- function(thermal = TRUE, loc = plots, time1 = 52, time2 = 39){
         dir.create(loc)
         setwd(loc)
     }
-    write_csv(dat.rings, "netShifts.csv")
+    write_csv(dat.rings, paste(name, "netShifts.csv", sep="_"))
     setwd(directory)
 }
 
@@ -163,7 +173,8 @@ plotNetShifts <- function(loc = 'plots'){
     library(RColorBrewer)
     
     directory <- getwd()
-    dat <- read_csv(paste(loc, "/netShifts.csv", sep=''), col_types = cols())
+    dat <- read_csv(paste(loc, "/", name, "_", "netShifts.csv", sep=''), 
+                    col_types = cols())
     
     colorCount <- nrow(dat)
     getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
@@ -180,7 +191,7 @@ plotNetShifts <- function(loc = 'plots'){
             fill = 'white'), legend.key.size = unit(0.3, "cm"))
     
     #save plot, uncomment to save
-    filename <- "NetShiftTest.png"
+    filename <- paste(name, "NetShiftTest.png", sep="_")
     newDir <- loc
     if (file.exists(loc)){
         setwd(loc)
@@ -196,7 +207,8 @@ getAvgShifts <- function(loc = 'plots'){
     library(readr)
     
     directory <- getwd()
-    dat <- read_csv(paste(loc, "/netShifts.csv", sep=''), col_types = cols())
+    dat <- read_csv(paste(loc, "/", name, "_", "netShifts.csv", sep=''), 
+                    col_types = cols())
     targets <- unique(dat$groupName)
     targets
     df <- data.frame()
@@ -221,7 +233,51 @@ getAvgShifts <- function(loc = 'plots'){
         dir.create(loc)
         setwd(loc)
     }
-    write_csv(df, "avgShifts.csv")
+    write_csv(df, paste(name, "avgShifts.csv", sep="_"))
+    setwd(directory)
+}
+
+plotAvgShifts <- function(loc = 'plots'){
+    library(ggplot2)
+    library(readr)
+    library(RColorBrewer)
+    
+    directory <- getwd()
+    dat <- read_csv(paste(loc, "/", name, "_", "avgShifts.csv", sep=''), 
+                    col_types = cols())
+    
+    colorCount <- nrow(dat)
+    getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
+    
+    #set error bars
+    limits <- aes(ymax = `Average Shift` + SD,
+                  ymin = `Average Shift` - SD)
+    
+    #configure plot and legend
+    plots <- ggplot(dat, aes(x = Target, y = `Average Shift`, fill = Target)) +
+        geom_bar(stat = 'identity') + geom_errorbar(limits, width = 0.3) +
+        scale_fill_manual(values = getPalette) +
+        ylab(expression(paste("Net Shift ( ", Delta,"pm)"))) +
+        theme_bw() + theme(panel.grid = element_blank(), 
+                           axis.title.x=element_blank()) + 
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        guides(fill = FALSE)
+    
+    #plot figure, uncomment to plot
+    plots
+    
+    #save figure, uncomment to save
+    filename <- paste(name, "AvgShiftTest.png", sep="_")
+    newDir <- loc
+    
+    if (file.exists(loc)){
+        setwd(loc)
+    } else {
+        dir.create(loc)
+        setwd(loc)
+    }
+    
+    ggsave(plots, file = filename, width = 8, height = 6)
     setwd(directory)
 }
 
@@ -229,7 +285,8 @@ findBadClusters <- function(loc = 'plots'){
     library(readr)
     library(dplyr)
     directory <- getwd()
-    dat <- read_csv(paste(loc, "/avgShifts.csv", sep=''), col_types = cols())
+    dat <- read_csv(paste(loc, "/", name, "_", "avgShifts.csv", sep=''), 
+                    col_types = cols())
     groupList <- dat$Target
     groupList
     cvCutoff <- 20
@@ -244,7 +301,7 @@ findBadClusters <- function(loc = 'plots'){
     }
     badGroups <- as.data.frame(badGroups)
     if(length(badGroups) > 0){
-        write_csv(badGroups, paste(loc, "/badGroups.csv", sep=""))
+        write_csv(badGroups, paste(loc, "/", name, "_", "badGroups.csv", sep=""))
     }
     setwd(directory)
 }
@@ -256,10 +313,10 @@ plotBadClusters <- function(loc = 'plots'){
     library(ggplot2)
     
     directory <- getwd()
-    badRings <- read_csv(paste(loc, "/badGroups.csv", sep = ""), col_types = cols())
+    badRings <- read_csv(paste(loc, "/", name, "_", "badGroups.csv", sep = ""), col_types = cols())
     badRings <- unlist(badRings)
     if (length(badRings) > 0){
-        dat <- read_csv(paste(loc, "/netShifts.csv", sep=""), col_types = cols())
+        dat <- read_csv(paste(loc, "/", name, "_", "netShifts.csv", sep=""), col_types = cols())
         dat.bad <- filter(dat, groupName %in% badRings)
         #configure colors
         colorCount <- nrow(dat.bad)
@@ -278,7 +335,7 @@ plotBadClusters <- function(loc = 'plots'){
                         fill = 'white'), legend.key.size = unit(0.3, "cm"))
         
         #save plot, uncomment to save
-        filename <- "BadRings.png"
+        filename <- paste(name, "BadRings.png", sep="_")
         newDir <- loc
         if (file.exists(loc)){
             setwd(loc)
@@ -287,7 +344,7 @@ plotBadClusters <- function(loc = 'plots'){
             setwd(loc)
         }
         ggsave(plots, file = filename, width = 10, height = 6)
-        write_csv(dat.bad, 'badRings.csv')
+        write_csv(dat.bad, paste(name, 'badRings.csv', sep="_"))
     }
     setwd(directory)
 }
@@ -353,11 +410,13 @@ identifyOutliers <- function(loc = 'plots'){
     library(dplyr)
     
     directory <- getwd()
-    badRings <- read_csv(paste(loc, "/badGroups.csv", sep=""), col_types = cols())
+    badRings <- read_csv(paste(loc, "/", name, "_", "badGroups.csv", sep=""),
+                         col_types = cols())
     badRings <- unlist(badRings)
     
     if (length(badRings) > 0){
-        dat <- read_csv(paste(loc, "/badRings.csv", sep=""), col_types = cols())
+        dat <- read_csv(paste(loc, "/", name, "_", "badRings.csv", sep=""),
+                        col_types = cols())
         badClusters <- unique(dat$group)
         counter <- 1
         tossedRings <- vector("numeric")
@@ -366,57 +425,16 @@ identifyOutliers <- function(loc = 'plots'){
             dat.cluster <- filter(dat, group == badClusters[i]) %>% 
                 select(netShifts) %>% unlist()
             outliers <- grubbs(dat.cluster)
-            ring.outlier <- filter(dat, netShifts == outliers$val) %>% select(ring)
+            ring.outlier <- filter(dat, netShifts == 
+                                       outliers$val) %>% select(ring)
             tossedRings[counter] <- ring.outlier
             counter <- counter + 1
         }
         tossedRings <- as.data.frame(tossedRings)
-        write_csv(tossedRings, paste(loc, "/tossedRings.csv", sep=""))
+        write_csv(tossedRings, paste(loc, "/", name, "_", 
+                                     "tossedRings.csv", sep=""))
     }
     
-    setwd(directory)
-}
-
-plotAvgShifts <- function(loc = 'plots'){
-    library(ggplot2)
-    library(readr)
-    library(RColorBrewer)
-    
-    directory <- getwd()
-    dat <- read_csv(paste(loc, "/avgShifts.csv", sep=''), col_types = cols())
-    
-    colorCount <- nrow(dat)
-    getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
-    
-    #set error bars
-    limits <- aes(ymax = `Average Shift` + SD,
-                  ymin = `Average Shift` - SD)
-    
-    #configure plot and legend
-    plots <- ggplot(dat, aes(x = Target, y = `Average Shift`, fill = Target)) +
-        geom_bar(stat = 'identity') + geom_errorbar(limits, width = 0.3) +
-        scale_fill_manual(values = getPalette) +
-        ylab(expression(paste("Net Shift ( ", Delta,"pm)"))) +
-        theme_bw() + theme(panel.grid = element_blank(), 
-            axis.title.x=element_blank()) + 
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-        guides(fill = FALSE)
-    
-    #plot figure, uncomment to plot
-    plots
-    
-    #save figure, uncomment to save
-    filename <- "AvgShiftTest.png"
-    newDir <- loc
-    
-    if (file.exists(loc)){
-        setwd(loc)
-    } else {
-        dir.create(loc)
-        setwd(loc)
-    }
-    
-    ggsave(plots, file = filename, width = 8, height = 6)
     setwd(directory)
 }
 
@@ -429,7 +447,8 @@ removeRings <- function(loc = 'corrected'){
     
     recipe <- read_csv("D:/Google Drive/Research/GitRepositories/XenograftProteinProfiling/groupNames_XPP.csv",
                        col_types = cols())
-    removeRings <- as.numeric(read_csv("plots/tossedRings.csv", col_types = cols()))
+    removeRings <- as.numeric(read_csv(paste("plots", "/", name, "_", 
+                                       "tossedRings.csv"), col_types = cols()))
     groupNames <- recipe$groupNames
     holder <- recipe[,c(1,2)]
     rings <- list.files(directory)
@@ -450,7 +469,6 @@ removeRings <- function(loc = 'corrected'){
         groupNum <- (ringNum - 1) %/% 4 + 1
         ring <- rep(ringNum, nrow(dat))
         group <- rep(groupNum, nrow(dat))
-        if (groupNum == 35){groupNum <- 34}
         groupName <- as.character(holder$groupNames[[groupNum]])
         groupName <- rep(groupName, nrow(dat))
         tmp <- data.frame(ring, group, time, shift, groupName)
@@ -465,17 +483,21 @@ removeRings <- function(loc = 'corrected'){
         setwd(loc)
     }
     
-    write_csv(df, "allRings.csv")
+    write_csv(df, paste(name, "allRings.csv", sep="_"))
     setwd(directory)
 }
 
-go <- function(location = 'plots'){
+go <- function(location = 'plots', getName = TRUE){
     library(ggplot2)
     library(readr)
     library(RColorBrewer)
     library(dplyr)
     
     directory <- getwd()
+    if(getName){
+        name <<- getNames()
+    } else {name <- ''}
+    
     if(location != 'plots'){
         removeRings(loc = location)
     } else{

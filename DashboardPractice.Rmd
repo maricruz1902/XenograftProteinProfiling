@@ -1,0 +1,114 @@
+---
+title: "Analysis of Microring Resonator Data with R"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    social: menu
+    source_code: embed
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+# Intro {.sidebar}
+
+This dashboard covers several topics:
+
+* The marmap package
+* The viridis package
+* Miscellaneous material
+
+# Starting from Raw Data
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### DataAnalysis.R
+
+Here is some text to add.
+
+```{r}
+GetData <- function(){
+	library(readr)
+	url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
+	filename <- basename(url)
+	download.file(url,destfile=filename)
+	dat <<- read_csv(filename, col_types = cols())
+}
+
+PlotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
+	# load relevant libraries
+	library(readr)
+	library(ggplot2)
+	library(dplyr)
+	library(RColorBrewer)
+
+	# import data
+	dat <- read_csv(filename, col_types = cols())
+
+	# create lists for data filter and filter data
+	targetList <- unique(dat$Target)
+	dat.Target <- filter(dat, Target == targetList[i])
+
+	# set error bars
+	limits <- aes(ymax = `Average Shift` + SD, ymin = `Average Shift` - SD)
+
+	# configure colors
+	colorCount <- length(unique(dat$`Cell Line`)) + 
+		length(unique(dat$`Time Point`))
+	getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
+
+	# configure plot and legend
+	plots <- ggplot(data = dat.Target,
+		aes(x = Treatment, y = `Average Shift`, 
+			fill = interaction(factor(`Time Point`), 
+			factor(`Cell Line`)), group = 
+			interaction(factor(`Time Point`), 
+			factor(`Cell Line`)))) +
+		geom_bar(stat = "identity", position = "dodge") +
+		ylab("Net Shift (pm)") +
+		geom_errorbar(limits,position = position_dodge(width = 0.9), 
+			width = 0.4) +
+		theme_bw() + theme(panel.grid = element_blank(), 
+			axis.title.x=element_blank()) + 
+		theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+		scale_fill_manual(values = getPalette, name = 
+			"Cell Line and Treatment", labels = 
+			c("GBM-6 1 h Treatment", "GBM-6 24 h Treatment",
+			"GBM-26 1 h Treatment", "GBM-26 24 h Treatment")) + 
+		theme(legend.key = element_rect(colour = 'white',
+			fill = 'white'), legend.key.size = unit(0.4, "cm"))+
+		ggtitle(paste('Target: ', targetList[i], sep=''))
+
+	# plot figure, uncomment to plot
+	 plots
+		
+	# save figure, uncomment to save
+	# filename = paste(targetList[i], 'png', sep='.')
+	# ggsave(plots, file = filename, width = 8, height = 6)
+}
+
+GetData()
+PlotEachTarget(1)
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
+# Compiling Data
+
+# Plotting Data
+

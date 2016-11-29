@@ -29,6 +29,38 @@ Column {data-width=650}
 Here is some text to add.
 
 ```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+More text for chart B
+
+```{r}
+
+```
+
+### Chart C
+
+Even more text for chart C
+```{r include = TRUE}
+
+```
+
+# Compiling Data
+
+# Plotting Data
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+### DataAnalysis.R
+
+Here is some text to add.
+
+```{r include=TRUE}
 GetData <- function(){
 	library(readr)
 	url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
@@ -93,22 +125,78 @@ GetData()
 PlotEachTarget(1)
 ```
 
-Column {data-width=350}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Chart B
+### Plotting Each Target Across Different Treatments
+
+```{r}
+GetData <- function(){
+	library(readr)
+	url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
+	filename <- basename(url)
+	download.file(url,destfile=filename)
+	dat <<- read_csv(filename, col_types = cols())
+}
+
+PlotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
+	# load relevant libraries
+	library(readr)
+	library(ggplot2)
+	library(dplyr)
+	library(RColorBrewer)
+
+	# import data
+	dat <- read_csv(filename, col_types = cols())
+
+	# create lists for data filter and filter data
+	targetList <- unique(dat$Target)
+	dat.Target <- filter(dat, Target == targetList[i])
+
+	# set error bars
+	limits <- aes(ymax = `Average Shift` + SD, ymin = `Average Shift` - SD)
+
+	# configure colors
+	colorCount <- length(unique(dat$`Cell Line`)) + 
+		length(unique(dat$`Time Point`))
+	getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
+
+	# configure plot and legend
+	plots <- ggplot(data = dat.Target,
+		aes(x = Treatment, y = `Average Shift`, 
+			fill = interaction(factor(`Time Point`), 
+			factor(`Cell Line`)), group = 
+			interaction(factor(`Time Point`), 
+			factor(`Cell Line`)))) +
+		geom_bar(stat = "identity", position = "dodge") +
+		ylab("Net Shift (pm)") +
+		geom_errorbar(limits,position = position_dodge(width = 0.9), 
+			width = 0.4) +
+		theme_bw() + theme(panel.grid = element_blank(), 
+			axis.title.x=element_blank()) + 
+		theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+		scale_fill_manual(values = getPalette, name = 
+			"Cell Line and Treatment", labels = 
+			c("GBM-6 1 h Treatment", "GBM-6 24 h Treatment",
+			"GBM-26 1 h Treatment", "GBM-26 24 h Treatment")) + 
+		theme(legend.key = element_rect(colour = 'white',
+			fill = 'white'), legend.key.size = unit(0.4, "cm"))+
+		ggtitle(paste('Target: ', targetList[i], sep=''))
+
+	# plot figure, uncomment to plot
+	 plots
+		
+	# save figure, uncomment to save
+	# filename = paste(targetList[i], 'png', sep='.')
+	# ggsave(plots, file = filename, width = 8, height = 6)
+}
+
+GetData()
+PlotEachTarget(1)
+```
+
+### Plotting Each Cell Line and Time Point
 
 ```{r}
 
 ```
-
-### Chart C
-
-```{r}
-
-```
-
-# Compiling Data
-
-# Plotting Data
-

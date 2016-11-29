@@ -1,4 +1,4 @@
-Time Point,Cell Line,Treatment,Target,Average Shift,Standard Deviation
+Time Point,Cell Line,Treatment,Target,Average Shift,SD
 1,26,Palbociclib,hydroxy-HIF,1115.51777,98.
 1,26,GDC0980,hydroxy-HIF,1349.099265,83.21165426
 1,26,DMSO,hydroxy-HIF,1162.354305,332.1304946

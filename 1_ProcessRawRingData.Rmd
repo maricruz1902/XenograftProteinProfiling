@@ -1,0 +1,50 @@
+---
+title: "Analyzing Microring Resonator Data"
+output: html_notebook
+theme: yeti
+---
+## Part 1: Processing Raw Data
+
+I divided microring resonator data analysis into three R programs. This tutorial 
+will cover the first of those files: **1_ProcessRawRingData.R**. The program
+consists of 12 custom functions that take raw data from a single run and outputs
+4 plots.
+
+The `RawGo` function executes all 12 custom functions.
+
+```{r echo = TRUE}
+RawGo <- function(location = 'plots', getName = TRUE){
+	# load relevant libraries
+	library(ggplot2)
+	library(readr)
+	library(RColorBrewer)
+	library(dplyr)
+	library(outliers)
+
+	# get working directory to reset at end of function
+	directory <- getwd()
+
+	name <- GetName()
+
+	# only run RemoveRings if location is not plots
+	if(location != 'plots'){
+		RemoveRings(loc = location)
+	} else{
+		AggData()
+	}
+	ThermalControl(loc = location)
+	PlotRingData(loc = location)
+	GetNetShifts(loc = location)
+	PlotNetShifts(loc = location)
+	GetAvgShifts(loc = location)
+	PlotAvgShifts(loc = location)
+	FindBadClusters(loc = location)
+	PlotBadClusters(loc = location)
+	IdentifyOutliers(loc = location)
+
+	setwd(directory)
+}
+```
+
+In order to install all relevant libraries, run `install.packages(c("ggplot2", 
+"reader", "RColorBrewer", "dplyr", "outliers"))` in the console.

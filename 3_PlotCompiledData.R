@@ -1,15 +1,13 @@
-GetData <- function( filename = "Combined_Averaged.csv"){
+GetData <- function(filename = "combinedAveraged.csv"){
 	library(readr)
 	# uncomment to use github repository as source of data
-	# url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/Combined_Averaged.csv"
+	# url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/combinedAveraged.csv"
 	# filename <- basename(url)
 	# download.file(url,destfile=filename)
-	
-        filename <- 'Combined_Averaged.csv'
-        dat <<- read_csv(filename, col_types = cols())
+	dat <<- read_csv(filename, col_types = cols())
 }
 
-PlotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
+PlotEachTarget <- function(i, filename = "combinedAveraged.csv"){
 	# load relevant libraries
 	library(readr)
 	library(ggplot2)
@@ -54,14 +52,14 @@ PlotEachTarget <- function(i, filename = "Combined_Averaged.csv"){
 		ggtitle(paste('Target: ', targetList[i], sep=''))
 
 	# plot figure, uncomment to plot
-	# plots
+	plots
 		
 	# save figure, uncomment to save
 	filename = paste(targetList[i], 'png', sep='.')
 	ggsave(plots, file = filename, width = 8, height = 6)
 }
 
-PlotEachTimepoint <- function(i, j, filename = "Combined_Averaged.csv"){
+PlotEachTimepoint <- function(i, j, filename = "combinedAveraged.csv"){
 	library(readr)
 	library(ggplot2)
 	library(RColorBrewer)
@@ -106,11 +104,12 @@ PlotEachTimepoint <- function(i, j, filename = "Combined_Averaged.csv"){
 	#plots
 
 	#save figure, uncomment to save
-	filename = paste(timepointList[i],cellLineList[j], 'png', sep='.')
+	filename = paste(timepointList[i], 'h_GBM', cellLineList[j], '.png',
+	        sep='')
 	ggsave(plots, file = filename, width = 8, height = 6)
 }
 
-PlotEachCellLine <- function(i, filename = "Combined_Averaged.csv"){
+PlotEachCellLine <- function(i, filename = "combinedAveraged.csv"){
 	library(readr)
 	library(ggplot2)
 	library(RColorBrewer)
@@ -153,11 +152,11 @@ PlotEachCellLine <- function(i, filename = "Combined_Averaged.csv"){
 	#plots
 
 	#save figure, uncomment to save
-	filename = paste(cellLineList[i], 'png', sep='.')
+	filename = paste('GBM', cellLineList[i], '.png', sep='')
 	ggsave(plots, file = filename, width = 12, height = 6)
 }
 
-HeatmapCellTime <- function(i, filename = "Combined_Averaged.csv"){
+HeatmapCellTime <- function(i, filename = "combinedAveraged.csv"){
 	library(readr)
 	library(ggplot2)
 	library(dplyr)
@@ -195,26 +194,31 @@ HeatmapCellTime <- function(i, filename = "Combined_Averaged.csv"){
 	treatmentList <- select(dat.1, `Treatment`) %>% unique()
 	names(df) <- c('Change', 'Target', 'Treatment')
 
+	xPos <- sort(as.vector(unique(df$Treatment)))
+	yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
 	#configure heatmap
 	plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-		geom_tile(stat = "identity") +
-		scale_fill_gradient2(low = "blue", mid = "white", 
-		high = "red", midpoint = 0, space = "rgb", 
-		na.value = "grey50", guide = "colourbar") +
+	        geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
+	        scale_fill_gradient2(low = "blue", mid = "white", 
+	                high = "red", midpoint = 0, space = "rgb", 
+	                na.value = "grey50", guide = "colourbar") + 
+	        scale_x_discrete(limits = xPos) + 
+	        scale_y_discrete(limits = yPos) +
 		ggtitle(paste('Cell Line: GBM-', cLL.i, ' Time Point: ', tPL.i,
 		' h', sep=''))
 
-	#plot figure, uncomment to plot
-	#plots
+	# plot figure, uncomment to plot
+	# plots
 
-	#write csv file and save figure, uncomment to save
+	# write csv file and save figure, uncomment to save
 	filename <- paste("heatmap_GBM", cLL.i, '_', tPL.i, 'h', sep='')
 	write_csv(df, paste(filename, '.csv', sep=''))
 	ggsave(plots, file = paste(filename, '.png', sep=''), 
-	width = 10, height = 6)
+	width = 6, height = 6)
 }
 
-HeatmapCellLine <- function(i, filename = "Combined_Averaged.csv"){
+HeatmapCellLine <- function(i, filename = "combinedAveraged.csv"){
 	library(readr)
 	library(ggplot2)
 	library(dplyr)
@@ -253,27 +257,30 @@ HeatmapCellLine <- function(i, filename = "Combined_Averaged.csv"){
 	treatmentList <- select(dat.1, `Treatment`) %>% unique()
 	names(df) <- c('Change', 'Target', 'Treatment')
 
+	xPos <- sort(as.vector(unique(df$Treatment)))
+	yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
 	#configure heatmap
 	plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-		geom_tile(stat = "identity") + 
-	        theme(axis.text.x = element_text(angle = 45, hjust = 1),
-	              panel.background = element_blank()) +
-		scale_fill_gradient2(low = "blue", mid = "white", 
-			high = "red", midpoint = 0, space = "rgb", 
-			na.value = "grey50", guide = "colourbar") +
+	        geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+	                hjust = 1), panel.background = element_blank()) +
+	        scale_fill_gradient2(low = "blue", mid = "white", 
+                        high = "red", midpoint = 0, space = "rgb", 
+	                na.value = "grey50", guide = "colourbar") + 
+	        scale_x_discrete(limits = xPos) + 
+	        scale_y_discrete(limits = yPos) +
 		ggtitle(paste('Cell Line: GBM-', cLL.i, sep=''))
 
-	#plot figure, uncomment to plot
-	#plots
+	# plot figure, uncomment to plot
+	# plots
 
 	#write csv file and save figure, uncomment to save
 	filename <- paste("heatmap_GBM", cLL.i, sep='')
 	write_csv(df, paste(filename, '.csv', sep=''))
 	ggsave(plots, file = paste(filename, '.png', sep=''), 
-		width = 10, height = 6)
+		width = 8, height = 6)
 	}
 
-HeatmapTimePoint <- function(i, filename = "Combined_Averaged.csv"){
+HeatmapTimePoint <- function(i, filename = "combinedAveraged.csv"){
 	library(readr)
 	library(ggplot2)
 	library(dplyr)
@@ -312,14 +319,17 @@ HeatmapTimePoint <- function(i, filename = "Combined_Averaged.csv"){
 	treatmentList <- select(dat.1, `Treatment`) %>% unique()
 	names(df) <- c('Change', 'Target', 'Treatment')
 
+	xPos <- sort(as.vector(unique(df$Treatment)))
+	yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
 	#configure heatmap
 	plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-		geom_tile(stat = "identity") + 
-	        theme(axis.text.x = element_text(angle = 45, hjust = 1),
-	              panel.background = element_blank()) +
-		scale_fill_gradient2(low = "blue", mid = "white", 
-			high = "red", midpoint = 0, space = "rgb", 
-			na.value = "grey50", guide = "colourbar") +
+	        geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
+	        scale_fill_gradient2(low = "blue", mid = "white", 
+                        high = "red", midpoint = 0, space = "rgb", 
+	                na.value = "grey50", guide = "colourbar") + 
+	        scale_x_discrete(limits = xPos) + 
+	        scale_y_discrete(limits = yPos) +
 		ggtitle(paste('Time Point: ', tPL.i, ' h', sep=''))
 
 	# plot figure, uncomment to plot
@@ -329,10 +339,10 @@ HeatmapTimePoint <- function(i, filename = "Combined_Averaged.csv"){
 	filename <- paste("heatmap_", tPL.i, 'h', sep='')
 	write_csv(df, paste(filename, '.csv', sep=''))
 	ggsave(plots, file = paste(filename, '.png', sep=''), 
-		width = 10, height = 6)
+		width = 8, height = 6)
 }
 
-HeatmapAll <- function(filename = "Combined_Averaged.csv"){
+HeatmapAll <- function(filename = "combinedAveraged.csv"){
 	library(readr)
 	library(ggplot2)
 	library(dplyr)
@@ -369,14 +379,17 @@ HeatmapAll <- function(filename = "Combined_Averaged.csv"){
 	treatmentList <- select(dat.1, `Treatment`) %>% unique()
 	names(df) <- c('Change', 'Target', 'Treatment')
 
+	xPos <- sort(as.vector(unique(df$Treatment)))
+	yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
 	#configure heatmap
 	plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-		geom_tile(stat = "identity") + 
-		theme(axis.text.x = element_text(angle = 45, hjust = 1),
-		      panel.background = element_blank()) +
-		scale_fill_gradient2(low = "blue", mid = "white", 
-			high = "red", midpoint = 0, space = "rgb", 
-			na.value = "grey50", guide = "colourbar")
+	        geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
+	        scale_fill_gradient2(low = "blue", mid = "white", 
+	                high = "red", midpoint = 0, space = "rgb", 
+                        na.value = "grey50", guide = "colourbar") + 
+	        scale_x_discrete(limits = xPos) + 
+	        scale_y_discrete(limits = yPos)
 
 	# plot figure, uncomment to plot
 	# plots
@@ -388,7 +401,7 @@ HeatmapAll <- function(filename = "Combined_Averaged.csv"){
 		width = 10, height = 6)
 }
 
-HeatmapCellTimeAlt <- function(i, filename = "Combined_Averaged.csv", 
+HeatmapCellTimeAlt <- function(i, filename = "combinedAveraged.csv", 
         removeTxt = c('(+)-Serum', '(-)-Serum')){
         library(readr)
         library(ggplot2)
@@ -428,14 +441,19 @@ HeatmapCellTimeAlt <- function(i, filename = "Combined_Averaged.csv",
         treatmentList <- select(dat.1, `Treatment`) %>% unique()
         names(df) <- c('Change', 'Target', 'Treatment')
         
+        xPos <- sort(as.vector(unique(df$Treatment)))
+        yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
         #configure heatmap
         plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-                geom_tile(stat = "identity") +
+                geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
                 scale_fill_gradient2(low = "blue", mid = "white", 
-                                     high = "red", midpoint = 0, space = "rgb", 
-                                     na.value = "grey50", guide = "colourbar") +
+                        high = "red", midpoint = 0, space = "rgb", 
+                        na.value = "grey50", guide = "colourbar") + 
+                scale_x_discrete(limits = xPos) + 
+                scale_y_discrete(limits = yPos) +
                 ggtitle(paste('Cell Line: GBM-', cLL.i, ' Time Point: ', tPL.i,
-                              ' h', sep=''))
+                        ' h', sep=''))
         
         #plot figure, uncomment to plot
         #plots
@@ -444,10 +462,10 @@ HeatmapCellTimeAlt <- function(i, filename = "Combined_Averaged.csv",
         filename <- paste("heatmap_GBM", cLL.i, '_', tPL.i, 'h_alt', sep='')
         write_csv(df, paste(filename, '.csv', sep=''))
         ggsave(plots, file = paste(filename, '.png', sep=''), 
-               width = 10, height = 6)
+               width = 4, height = 6)
 }
 
-HeatmapTimePointAlt <- function(i, filename = "Combined_Averaged.csv",
+HeatmapTimePointAlt <- function(i, filename = "combinedAveraged.csv",
         removeTxt = c('(+)-Serum', '(-)-Serum')){
         library(readr)
         library(ggplot2)
@@ -488,14 +506,17 @@ HeatmapTimePointAlt <- function(i, filename = "Combined_Averaged.csv",
         treatmentList <- select(dat.1, `Treatment`) %>% unique()
         names(df) <- c('Change', 'Target', 'Treatment')
         
+        xPos <- sort(as.vector(unique(df$Treatment)))
+        yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
         #configure heatmap
         plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-                geom_tile(stat = "identity") + 
-                theme(axis.text.x = element_text(angle = 45, hjust = 1),
-                      panel.background = element_blank()) +
+                geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
                 scale_fill_gradient2(low = "blue", mid = "white", 
-                                     high = "red", midpoint = 0, space = "rgb", 
-                                     na.value = "grey50", guide = "colourbar") +
+                        high = "red", midpoint = 0, space = "rgb", 
+                        na.value = "grey50", guide = "colourbar") + 
+                scale_x_discrete(limits = xPos) + 
+                scale_y_discrete(limits = yPos) +
                 ggtitle(paste('Time Point: ', tPL.i, ' h', sep=''))
         
         #plot figure, uncomment to plot
@@ -505,10 +526,10 @@ HeatmapTimePointAlt <- function(i, filename = "Combined_Averaged.csv",
         filename <- paste("heatmap_", tPL.i, 'h_alt', sep='')
         write_csv(df, paste(filename, '.csv', sep=''))
         ggsave(plots, file = paste(filename, '.png', sep=''), 
-               width = 10, height = 6)
+               width = 6, height = 6)
 }
 
-HeatmapCellLineAlt <- function(i, filename = "Combined_Averaged.csv",
+HeatmapCellLineAlt <- function(i, filename = "combinedAveraged.csv",
         removeTxt = c('(+)-Serum', '(-)-Serum')){
         library(readr)
         library(ggplot2)
@@ -549,13 +570,17 @@ HeatmapCellLineAlt <- function(i, filename = "Combined_Averaged.csv",
         treatmentList <- select(dat.1, `Treatment`) %>% unique()
         names(df) <- c('Change', 'Target', 'Treatment')
         
+        xPos <- sort(as.vector(unique(df$Treatment)))
+        yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
         #configure heatmap
         plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-                geom_tile(stat = "identity") + 
-                theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+                geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
                 scale_fill_gradient2(low = "blue", mid = "white", 
-                                     high = "red", midpoint = 0, space = "rgb", 
-                                     na.value = "grey50", guide = "colourbar") +
+                        high = "red", midpoint = 0, space = "rgb", 
+                        na.value = "grey50", guide = "colourbar") + 
+                scale_x_discrete(limits = xPos) + 
+                scale_y_discrete(limits = yPos) +
                 ggtitle(paste('Cell Line: GBM-', cLL.i, sep=''))
         
         #plot figure, uncomment to plot
@@ -565,10 +590,10 @@ HeatmapCellLineAlt <- function(i, filename = "Combined_Averaged.csv",
         filename <- paste("heatmap_GBM", cLL.i, '_alt', sep='')
         write_csv(df, paste(filename, '.csv', sep=''))
         ggsave(plots, file = paste(filename, '.png', sep=''), 
-               width = 10, height = 6)
+                width = 6, height = 6)
 }
 
-HeatmapAllAlt <- function(filename = "Combined_Averaged.csv",
+HeatmapAllAlt <- function(filename = "combinedAveraged.csv",
         removeTxt = c('(+)-Serum', '(-)-Serum')){
         library(readr)
         library(ggplot2)
@@ -594,7 +619,7 @@ HeatmapAllAlt <- function(filename = "Combined_Averaged.csv",
                 treatment.b <- select(dat.2, `Time Point`) %>% unlist()
                 treatment.c <- select(dat.2, `Cell Line`) %>% unlist()
                 treatment <- paste(treatment.a, '_', treatment.b, 'h_GBM', 
-                                   treatment.c, sep='') 
+                        treatment.c, sep='') 
                 meanShift <- mean(targetShift)
                 target <- rep(targetList[i], length(treatmentList))
                 holder <- numeric()
@@ -607,14 +632,17 @@ HeatmapAllAlt <- function(filename = "Combined_Averaged.csv",
         treatmentList <- select(dat.1, `Treatment`) %>% unique()
         names(df) <- c('Change', 'Target', 'Treatment')
         
+        xPos <- sort(as.vector(unique(df$Treatment)))
+        yPos <- sort(as.vector(unique(df$Target)), decreasing = TRUE)
         #configure heatmap
         plots <- ggplot(df, aes(x = Treatment, y = Target, fill = Change)) +
-                geom_tile(stat = "identity") + 
-                theme(axis.text.x = element_text(angle = 45, hjust = 1),
-                      panel.background = element_blank()) +
+                geom_raster() + theme(axis.text.x = element_text(angle = 45, 
+                        hjust = 1), panel.background = element_blank()) +
                 scale_fill_gradient2(low = "blue", mid = "white", 
-                                     high = "red", midpoint = 0, space = "rgb", 
-                                     na.value = "grey50", guide = "colourbar")
+                        high = "red", midpoint = 0, space = "rgb", 
+                        na.value = "grey50", guide = "colourbar") + 
+                scale_x_discrete(limits = xPos) + 
+                scale_y_discrete(limits = yPos)
         
         # plot figure, uncomment to plot
         # plots
@@ -623,33 +651,33 @@ HeatmapAllAlt <- function(filename = "Combined_Averaged.csv",
         filename <- "heatmap_all"
         write_csv(df, paste(filename, '.csv', sep=''))
         ggsave(plots, file = paste(filename, '.png', sep=''),
-               width = 10, height = 6)
+               width = 8, height = 6)
 }
 
-GoPlot <- function(){
-	dat <- GetData()
+GoPlot <- function(useData = "combinedAveraged.csv"){
+	dat <- GetData(filename = useData)
 	numTargets <- 1:length(unique(dat$Target))
 	for(i in numTargets){
-		PlotEachTarget(i)
+		PlotEachTarget(i, filename = useData)
 	}
 	numTimepoints <- length(unique(dat$`Time Point`))
 	numCellLines <- length(unique(dat$`Cell Line`))
 	for(i in 1:numTimepoints){
 		for (j in 1:numCellLines){
-			PlotEachTimepoint(i, j)
+			PlotEachTimepoint(i, j, filename = useData)
 		}
 	}
 	for(i in 1:2){
-		PlotEachCellLine(i)
-		HeatmapCellLine(i)
-		HeatmapCellLineAlt(i)
-		HeatmapTimePoint(i)
-		HeatmapTimePointAlt(i)
+		PlotEachCellLine(i, filename = useData)
+		HeatmapCellLine(i, filename = useData)
+		HeatmapCellLineAlt(i, filename = useData)
+		HeatmapTimePoint(i, filename = useData)
+		HeatmapTimePointAlt(i, filename = useData)
 	}
 	for(i in 1:4){
-		HeatmapCellTime(i)
-	        HeatmapCellTimeAlt(i)
+		HeatmapCellTime(i, filename = useData)
+	        HeatmapCellTimeAlt(i, filename = useData)
 	}
-	HeatmapAll()
-	HeatmapAllAlt()
+	HeatmapAll(filename = useData)
+	HeatmapAllAlt(filename = useData)
 }

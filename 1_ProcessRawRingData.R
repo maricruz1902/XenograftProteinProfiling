@@ -17,12 +17,11 @@ AggData <- function(loc = 'plots') {
     
         # get working directory to reset at end of function
 	directory <- getwd()
-        filename <- "D:/Box Sync/Data/groupNames_XPP.csv"
 
 	# get information of chip layout from github repository
-	# url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_XPP.csv"
-	# filename <- paste("../", basename(url), sep="")
-	# download.file(url, filename)
+	url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
+	filename <- paste("../", basename(url), sep="")
+	download.file(url, filename)
 	
 	# define recipe as global variable for use in other functions
 	recipe <<- read_csv(filename, col_types = cols())
@@ -33,6 +32,8 @@ AggData <- function(loc = 'plots') {
 
 	# generate list of rings to analyze (gets all *.csv files)
 	rings <- list.files(directory, pattern = ".csv")
+	removeFiles <- c("comments.csv")
+	rings <- rings[!rings %in% removeFiles]
 
 	# create empty data frame to store data
 	df <- data.frame()
@@ -154,7 +155,7 @@ PlotRingData <- function(thermal = TRUE, loc = 'plots'){
 	setwd(directory)
 }
 
-GetNetShifts <- function(thermal = TRUE, loc = 'plots', time1 = 52, time2 = 39){
+GetNetShifts <- function(thermal = TRUE, loc = 'plots', time1 = 22, time2 = 5){
 	# load relevant libraries
 	library(readr)
 	library(dplyr)
@@ -231,7 +232,7 @@ PlotNetShifts <- function(loc = 'plots'){
 			fill = 'white'), legend.key.size = unit(0.3, "cm"))
 
 	# save plot, uncomment to save
-	filename <- paste(name, "NetShiftTest.png", sep="_")
+	filename <- paste(name, "NetShift.png", sep="_")
 	setwd(loc)
 	ggsave(plots, file = filename, width = 10, height = 6)
 	setwd(directory)
@@ -307,7 +308,7 @@ PlotAvgShifts <- function(loc = 'plots'){
 		guides(fill = FALSE)
 
 	#save figure, uncomment to save
-	filename <- paste(name, "AvgShiftTest.png", sep="_")
+	filename <- paste(name, "AvgShift.png", sep="_")
 	setwd(loc)
 	ggsave(plots, file = filename, width = 8, height = 6)
 	setwd(directory)
@@ -591,4 +592,21 @@ AnalyzeFullDataSet <- function(){
 		}
 		setwd(directory)
 	}
+}
+
+AnalyzeFullDataSetAlt <- function(){
+        directory <- getwd()
+        listData <- list.dirs(recursive = FALSE)
+        for (i in 1:length(listData)){
+                tempDir <- listData[i]
+                setwd(tempDir)
+                RawGo()
+                if (file.exists('plots/tossedRings.csv')){
+                        RawGo(location = 'corrected')
+                }
+                if (file.exists('corrected/tossedRings.csv')){
+                        RawGo(location = 'corrected2')
+                }
+                setwd(directory)
+        }
 }

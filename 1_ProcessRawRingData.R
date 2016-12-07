@@ -68,7 +68,7 @@ AggData <- function(loc = 'plots') {
 	setwd(directory)
 }
 
-SubtractControl <- function(loc = 'plots'){
+ThermalControl <- function(loc = 'plots'){
 	#load relevant libraries
 	library(readr)
 	library(dplyr)
@@ -112,7 +112,51 @@ SubtractControl <- function(loc = 'plots'){
 	write_csv(dat, paste(loc,"/", name, "_", "allRings_tc.csv", sep = ''))   
 }
 
-PlotRingData <- function(thermal = TRUE, loc = 'plots'){
+SubtractControl <- function(loc = 'plots', control){
+        #load relevant libraries
+        library(readr)
+        library(dplyr)
+        
+        # get working directory to reset at end of function
+        directory = getwd()
+        
+        # get ring data
+        dat <- read_csv(paste(loc, "/", name, "_", "allRings.csv", sep = ''), 
+                        col_types = cols())
+        
+        # get thermal control averages
+        thermals <- filter(dat, groupName == control)
+        ringList <- unique(thermals$ring)
+        
+        # gets times from first thermal control
+        times <- filter(thermals, ring == ringList[1]) %>% select(time)
+        df.thermals <- data.frame(times)
+        
+        # create dataframe with all thermals
+        for (i in ringList){
+                ringShift <- filter(thermals, ring == i) %>% select(shift)
+                names(ringShift) <- paste('ring', i, sep='')
+                df.control <- cbind(df.control, ringShift)
+        }
+        
+        # averages thermal controls
+        # NOTE: does NOT separate thermal controls by channel
+        cols <- ncol(df.thermals)
+        df.thermals$avgThermals <- rowMeans(df.thermals[,c(2:cols)])
+        avgThermals <- as.vector(df.thermals$avgThermals)
+        
+        #subtracts thermal controls from each ring
+        ringNames <- unique(dat$ring)
+        for(i in ringNames){
+                ringDat <- filter(dat, ring == i) %>% select(shift)
+                ringTC <- ringDat - avgThermals
+                dat[dat$ring == i, 4] <- ringTC
+        }
+        
+        write_csv(dat, paste(loc,"/", name, "_", "allRings_control.csv", sep = ''))   
+}
+
+PlotRingData <- function(plot, loc = 'plots'){
 	# loads relevant libraries
 	library(ggplot2)
 	library(readr)
@@ -122,11 +166,14 @@ PlotRingData <- function(thermal = TRUE, loc = 'plots'){
 	directory <- getwd()
 	
 	# use thermally controlled data if desired
-	if (thermal == TRUE){
+	if (plot == "thermal"){
 		dat <- read_csv(paste(loc, "/", name, "_", 
 			"allRings_tc.csv", sep=''), col_types = cols())
-	} else {
-		dat <- read_csv(paste(loc, "/allRings.csv", sep=''), 
+	} else if (plot == "control"){
+	        dat <- read_csv(paste(loc, "/", name, "_", 
+	                "allRings_control.csv", sep=""), col_types = cols())
+	} else if (plot == "raw") {
+		dat <- read_csv(paste(loc, "/", name, "_allRings.csv", sep=''), 
 			col_types = cols())
 	}
 	
@@ -149,7 +196,7 @@ PlotRingData <- function(thermal = TRUE, loc = 'plots'){
 	#plots
 
 	#save plot, uncomment to save
-	filename <- paste(name, "AllRings.png", sep="_")
+	filename <- paste(name, "_AllRings_", plot, ".png", sep="")
 	setwd(loc)
 	ggsave(plots, file = filename, width = 8, height = 6)
 	setwd(directory)
@@ -620,11 +667,14 @@ RawGo <- function(location = 'plots', getName = TRUE){
 	} else{
 		AggData()
 	}
-	SubtractControl(loc = location)
-	PlotRingData(loc = location)
-	PlotChannels(loc = location)
+	ThermalControl(loc = location)
+	SubtractControl(loc = location, control = "")
+	PlotRingData(loc = location, plot = "raw")
+	PlotRingData(loc = location, plot = "thermal")
+	PlotRingData(loc = location, plot = "control")
+	PlotChannels(loc = location, channel = 1)
 	PlotChannels(loc = location, channel = 2)
-	GetNetShifts(loc = location)
+	GetNetShifts(loc = location, time1 = 22, time2 = 5)
 	PlotNetShifts(loc = location)
 	GetAvgShifts(loc = location)
 	PlotAvgShifts(loc = location)

@@ -68,7 +68,7 @@ AggData <- function(loc = 'plots') {
 	setwd(directory)
 }
 
-ThermalControl <- function(loc = 'plots'){
+SubtractControl <- function(loc = 'plots'){
 	#load relevant libraries
 	library(readr)
 	library(dplyr)
@@ -153,6 +153,59 @@ PlotRingData <- function(thermal = TRUE, loc = 'plots'){
 	setwd(loc)
 	ggsave(plots, file = filename, width = 8, height = 6)
 	setwd(directory)
+}
+
+PlotChannels <- function(channel = 1, thermal = TRUE, loc = "plots"){
+        # loads relevant libraries
+        library(ggplot2)
+        library(readr)
+        library(dplyr)
+        library(RColorBrewer)
+        
+        # get working directory to reset at end of function
+        directory <- getwd()
+        
+        # use thermally controlled data if desired
+        if (thermal == TRUE){
+                dat <- read_csv(paste(loc, "/", name, "_", 
+                        "allRings_tc.csv", sep=''), col_types = cols())
+        } else {
+                dat <- read_csv(paste(loc, "/allRings.csv", sep=''),
+                        col_types = cols())
+        }
+        
+        # filter data to desired channel
+        if (channel == 1){
+                ch <- c(1:17)
+        } else if (channel == 2){
+                ch <- c(18:34)
+        }
+        
+        dat <- filter(dat, group %in% ch)
+        
+        #set colors for plot
+        colorCount <- length(unique(dat$groupName))
+        getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
+        
+        #configure plot and legend
+        plots <- ggplot(dat, aes(time, shift, colour = factor(groupName))) + 
+                geom_point(size = 1) +
+                xlab("Time (min)") + 
+                ylab(expression(paste("Relative Shift (",Delta,"pm)"))) +
+                scale_colour_manual(values = getPalette, name = 'Target') +
+                theme_bw() + theme(panel.grid = element_blank(), 
+                                   axis.title.x=element_blank()) + 
+                theme(legend.key = element_rect(colour = 'white',
+                        fill = 'white'), legend.key.size = unit(0.4, "cm"))
+        
+        # plot figure, uncomment to plot
+        # plots
+        
+        # save plot, uncomment to save
+        filename <- paste(name, "_ch", channel, ".png", sep="")
+        setwd(loc)
+        ggsave(plots, file = filename, width = 8, height = 6)
+        setwd(directory)
 }
 
 GetNetShifts <- function(thermal = TRUE, loc = 'plots', time1 = 22, time2 = 5){
@@ -567,8 +620,10 @@ RawGo <- function(location = 'plots', getName = TRUE){
 	} else{
 		AggData()
 	}
-	ThermalControl(loc = location)
+	SubtractControl(loc = location)
 	PlotRingData(loc = location)
+	PlotChannels(loc = location)
+	PlotChannels(loc = location, channel = 2)
 	GetNetShifts(loc = location)
 	PlotNetShifts(loc = location)
 	GetAvgShifts(loc = location)

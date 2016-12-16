@@ -22,20 +22,17 @@ AggData <- function(loc = 'plots') {
 
 	# get information of chip layout from github repository
 	if (!file.exists("../groupNames_XPP.csv")){
-	        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
+	        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_XPP.csv"
 	        filename <- paste("../", basename(url), sep="")
 	        download.file(url, filename)
 	}
 	
 	# define recipe as global variable for use in other functions
 	recipe <<- read_csv(filename, col_types = cols())
-	groupNames <- recipe$groupNames
-	
-	# holder takes first two columns of recipe
-	holder <- recipe[,c(1,2)]
+	targets <- recipe$Target
 
 	# generate list of rings to analyze (gets all *.csv files)
-	rings <- list.files(directory, pattern = ".csv")
+	rings <- list.files(directory, pattern = ".csv", recursive = FALSE)
 	removeFiles <- c("comments.csv")
 	rings <- rings[!rings %in% removeFiles]
 
@@ -53,14 +50,19 @@ AggData <- function(loc = 'plots') {
 		groupNum <- (ringNum - 1) %/% 4 + 1
 		ring <- rep(ringNum, nrow(dat))
 		group <- rep(groupNum, nrow(dat))
-		groupName <- as.character(holder$groupNames[[groupNum]])
+		groupName <- as.character(recipe$Target[[groupNum]])
 		groupName <- rep(groupName, nrow(dat))
-		tmp <- data.frame(ring, group, time_shift, shift, groupName)
+		channel <- recipe$Channel[[groupNum]]
+		channel <- rep(channel, nrow(dat))
+		run <- rep(name, nrow(dat))
+		tmp <- data.frame(ring, group, time_shift, shift, groupName, 
+		        channel, run)
 		df <- rbind(df, tmp)
 	}
     
 	# renames columns in df
-	names(df) <- c("ring", "group", "time", "shift", "groupName")
+	names(df) <- c("Ring", "Group", "Time", "Shift", "Target", "Channel",
+	        "Experiment")
     
 	# creates "plots" directory if one does not exist
 	if (!file.exists(loc)){dir.create(loc)}
@@ -72,7 +74,7 @@ AggData <- function(loc = 'plots') {
 	setwd(directory)
 }
 
-ThermalControl <- function(loc = 'plots'){
+SubtractControl <- function(loc = 'plots', ch, cntl){
 	#load relevant libraries
 	library(readr)
 	library(dplyr)
@@ -80,87 +82,44 @@ ThermalControl <- function(loc = 'plots'){
         # get working directory to reset at end of function
 	directory = getwd()
 	
-	# get ring data
+	# get ring data and filter by channel
 	dat <- read_csv(paste(loc, "/", name, "_", "allRings.csv", sep = ''), 
 		col_types = cols())
+	dat <- filter(dat, Channel == ch)
 
 	# get thermal control averages
-	thermals <- filter(dat, groupName == "thermal")
-	ringList <- unique(thermals$ring)
+	controls <- filter(dat, Target == cntl)
+	ringList <- unique(controls$Ring)
 	
 	# gets times from first thermal control
-	times <- filter(thermals, ring == ringList[1]) %>% select(time)
-	df.thermals <- data.frame(times)
+	times <- filter(controls, Ring == ringList[1]) %>% select(Time)
+	df.controls <- data.frame(times)
 	
-	# create dataframe with all thermals
+	# create dataframe with all controls
 	for (i in ringList){
-		ringShift <- filter(thermals, ring == i) %>% select(shift)
-		names(ringShift) <- paste('ring', i, sep='')
-		df.thermals <- cbind(df.thermals, ringShift)
+		ringShift <- filter(controls, Ring == i) %>% select(Shift)
+		names(ringShift) <- paste('Ring', i, sep='')
+		df.controls <- cbind(df.controls, ringShift)
 	}
 	
 	# averages thermal controls
-	# NOTE: does NOT separate thermal controls by channel
-	cols <- ncol(df.thermals)
-	df.thermals$avgThermals <- rowMeans(df.thermals[,c(2:cols)])
-	avgThermals <- as.vector(df.thermals$avgThermals)
+	cols <- ncol(df.controls)
+	df.controls$avgControls <- rowMeans(df.controls[,c(2:cols)])
+	avgControls <- as.vector(df.controls$avgControls)
 
 	#subtracts thermal controls from each ring
-	ringNames <- unique(dat$ring)
+	ringNames <- unique(dat$Ring)
 	for(i in ringNames){
-		ringDat <- filter(dat, ring == i) %>% select(shift)
-		ringTC <- ringDat - avgThermals
-		dat[dat$ring == i, 4] <- ringTC
+		ringDat <- filter(dat, Ring == i) %>% select(Shift)
+		ringTC <- ringDat - avgControls
+		dat[dat$Ring == i, 4] <- ringTC
 	}
 
-	write_csv(dat, paste(loc,"/", name, "_", "allRings_tc.csv", sep = ''))   
+	write_csv(dat, paste(loc,"/", name, "_ch", ch, "_", cntl, "Control.csv",
+	                     sep = ''))   
 }
 
-SubtractControl <- function(loc = 'plots', control){
-        #load relevant libraries
-        library(readr)
-        library(dplyr)
-        
-        # get working directory to reset at end of function
-        directory = getwd()
-        
-        # get ring data
-        dat <- read_csv(paste(loc, "/", name, "_", "allRings.csv", sep = ''), 
-                        col_types = cols())
-        
-        # get thermal control averages
-        thermals <- filter(dat, groupName == control)
-        ringList <- unique(thermals$ring)
-        
-        # gets times from first thermal control
-        times <- filter(thermals, ring == ringList[1]) %>% select(time)
-        df.thermals <- data.frame(times)
-        
-        # create dataframe with all thermals
-        for (i in ringList){
-                ringShift <- filter(thermals, ring == i) %>% select(shift)
-                names(ringShift) <- paste('ring', i, sep='')
-                df.control <- cbind(df.control, ringShift)
-        }
-        
-        # averages thermal controls
-        # NOTE: does NOT separate thermal controls by channel
-        cols <- ncol(df.thermals)
-        df.thermals$avgThermals <- rowMeans(df.thermals[,c(2:cols)])
-        avgThermals <- as.vector(df.thermals$avgThermals)
-        
-        #subtracts thermal controls from each ring
-        ringNames <- unique(dat$ring)
-        for(i in ringNames){
-                ringDat <- filter(dat, ring == i) %>% select(shift)
-                ringTC <- ringDat - avgThermals
-                dat[dat$ring == i, 4] <- ringTC
-        }
-        
-        write_csv(dat, paste(loc,"/", name, "_", "allRings_control.csv", sep = ''))   
-}
-
-PlotRingData <- function(plot, loc = 'plots'){
+PlotRingData <- function(cntl, ch, loc = 'plots'){
 	# loads relevant libraries
 	library(ggplot2)
 	library(readr)
@@ -170,24 +129,20 @@ PlotRingData <- function(plot, loc = 'plots'){
 	directory <- getwd()
 	
 	# use thermally controlled data if desired
-	if (plot == "thermal"){
-		dat <- read_csv(paste(loc, "/", name, "_", 
-			"allRings_tc.csv", sep=''), col_types = cols())
-	} else if (plot == "control"){
-	        dat <- read_csv(paste(loc, "/", name, "_", 
-	                "allRings_control.csv", sep=""), col_types = cols())
-	} else if (plot == "raw") {
+	if (cntl != "raw"){
+		dat <- read_csv(paste(loc, "/", name, "_ch", ch,
+			"_", cntl, "Control.csv", sep=''), col_types = cols())
+	} else if (cntl == "raw") {
 		dat <- read_csv(paste(loc, "/", name, "_allRings.csv", sep=''), 
 			col_types = cols())
 	}
 	
 	#set colors for plot
-	colorCount <- length(unique(dat$groupName))
+	colorCount <- length(unique(dat$Target))
 	getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
 
 	#configure plot and legend
-	plots <- ggplot(dat, aes(time, shift, colour = factor(groupName))) + 
-		geom_point(size = 1) +
+	plots <- ggplot(dat, aes(Time, Shift, colour = factor(Target))) + 
 		xlab("Time (min)") + 
 		ylab(expression(paste("Relative Shift (",Delta,"pm)"))) +
 		scale_colour_manual(values = getPalette, name = 'Target') +
@@ -195,73 +150,22 @@ PlotRingData <- function(plot, loc = 'plots'){
 			axis.title.x=element_blank()) + 
 		theme(legend.key = element_rect(colour = 'white',
 			fill = 'white'), legend.key.size = unit(0.4, "cm"))
+	
+	if (cntl == "raw"){
+	        plots <- plots + geom_point(size = 1) + facet_grid(.~ Channel)
+	} else {plots <- plots + geom_point(size = 1)}
 
 	#plot figure, uncomment to plot
-	#plots
+	# plots
 
 	#save plot, uncomment to save
-	filename <- paste(name, "_AllRings_", plot, ".png", sep="")
+	filename <- paste(name, "_ch", ch, "_", cntl, "Control.png", sep="")
 	setwd(loc)
 	ggsave(plots, file = filename, width = 8, height = 6)
 	setwd(directory)
 }
 
-PlotChannels <- function(channel = 1, thermal = TRUE, loc = "plots"){
-        # loads relevant libraries
-        library(ggplot2)
-        library(readr)
-        library(dplyr)
-        library(RColorBrewer)
-        
-        # get working directory to reset at end of function
-        directory <- getwd()
-        
-        # use thermally controlled data if desired
-        if (thermal == TRUE){
-                dat <- read_csv(paste(loc, "/", name, "_", 
-                        "allRings_tc.csv", sep=''), col_types = cols())
-        } else {
-                dat <- read_csv(paste(loc, "/allRings.csv", sep=''),
-                        col_types = cols())
-        }
-        
-        # filter data to desired channel
-        if (channel == 1){
-                ch <- c(1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
-                        30, 32)
-        } else if (channel == 2){
-                ch <- c(3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31,
-                        33, 34)
-        }
-        
-        dat <- filter(dat, group %in% ch)
-        
-        #set colors for plot
-        colorCount <- length(unique(dat$groupName))
-        getPalette <- colorRampPalette(brewer.pal(8, "Paired"))(colorCount)
-        
-        #configure plot and legend
-        plots <- ggplot(dat, aes(time, shift, colour = factor(groupName))) + 
-                geom_point(size = 1) +
-                xlab("Time (min)") + 
-                ylab(expression(paste("Relative Shift (",Delta,"pm)"))) +
-                scale_colour_manual(values = getPalette, name = 'Target') +
-                theme_bw() + theme(panel.grid = element_blank(), 
-                                   axis.title.x=element_blank()) + 
-                theme(legend.key = element_rect(colour = 'white',
-                        fill = 'white'), legend.key.size = unit(0.4, "cm"))
-        
-        # plot figure, uncomment to plot
-        # plots
-        
-        # save plot, uncomment to save
-        filename <- paste(name, "_ch", channel, ".png", sep="")
-        setwd(loc)
-        ggsave(plots, file = filename, width = 8, height = 6)
-        setwd(directory)
-}
-
-GetNetShifts <- function(thermal = TRUE, loc = 'plots', time1 = 22, time2 = 5){
+GetNetShifts <- function(thermal = TRUE, loc = 'plots', time1, time2){
 	# load relevant libraries
 	library(readr)
 	library(dplyr)

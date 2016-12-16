@@ -18,14 +18,7 @@ AggData <- function(loc = 'plots') {
         # get working directory to reset at end of function
 	directory <- getwd()
 	
-	filename <- "../groupNames_XPP.csv"
-
-	# get information of chip layout from github repository
-	if (!file.exists("../groupNames_XPP.csv")){
-	        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
-	        filename <- paste("../", basename(url), sep="")
-	        download.file(url, filename)
-	}
+	filename <- "../ChipMap.csv"
 	
 	# define recipe as global variable for use in other functions
 	recipe <<- read_csv(filename, col_types = cols())
@@ -35,7 +28,7 @@ AggData <- function(loc = 'plots') {
 	holder <- recipe[,c(1,2)]
 
 	# generate list of rings to analyze (gets all *.csv files)
-	rings <- list.files(directory, pattern = ".csv")
+	rings <- list.files(directory, pattern = ".csv", recursive = FALSE)
 	removeFiles <- c("comments.csv")
 	rings <- rings[!rings %in% removeFiles]
 
@@ -187,7 +180,7 @@ PlotRingData <- function(plot, loc = 'plots'){
 
 	#configure plot and legend
 	plots <- ggplot(dat, aes(time, shift, colour = factor(groupName))) + 
-		geom_point(size = 1) +
+		geom_point() +
 		xlab("Time (min)") + 
 		ylab(expression(paste("Relative Shift (",Delta,"pm)"))) +
 		scale_colour_manual(values = getPalette, name = 'Target') +
@@ -680,7 +673,7 @@ RawGo <- function(location = 'plots', getName = TRUE){
 	# PlotRingData(loc = location, plot = "control")
 	PlotChannels(loc = location, channel = 1)
 	PlotChannels(loc = location, channel = 2)
-	GetNetShifts(loc = location, time1 = 53, time2 = 71)
+	GetNetShifts(loc = location, time1 = 71, time2 = 53)
 	PlotNetShifts(loc = location)
 	GetAvgShifts(loc = location)
 	PlotAvgShifts(loc = location)

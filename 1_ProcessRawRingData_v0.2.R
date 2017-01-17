@@ -104,7 +104,11 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
 	
 	# averages thermal controls
 	cols <- ncol(df.controls)
-	df.controls$avgControls <- rowMeans(df.controls[,c(2:cols)])
+	if (length(unique(controls$Ring)) != 1) {
+	        df.controls$avgControls <- rowMeans(df.controls[,c(2:cols)])
+	} else {
+	        df.controls$avgControls <- df.controls[,c(2:cols)]
+	}
 	avgControls <- as.vector(df.controls$avgControls)
 
 	#subtracts thermal controls from each ring

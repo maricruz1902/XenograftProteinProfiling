@@ -18,12 +18,13 @@ AggData <- function(loc = 'plots') {
         # get working directory to reset at end of function
         directory <- getwd()
         
-        filename <- "../groupNames_allClusters.csv"
+        # change this file name to use alternative ring or group labels
+        filename <- "groupNames_allClusters.csv"
         
         # get information of chip layout from github repository
-        if (!file.exists("../groupNames_allClusters.csv")){
+        if (!file.exists("groupNames_allClusters.csv")){
         url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
-        filename <- paste("../", basename(url), sep="")
+        filename <- basename(url)
         download.file(url, filename)
         }
         
@@ -33,7 +34,8 @@ AggData <- function(loc = 'plots') {
         
         # generate list of rings to analyze (gets all *.csv files)
         rings <- list.files(directory, pattern = ".csv", recursive = FALSE)
-        removeFiles <- c("comments.csv")
+        idfile <- grepl("group", rings)
+        removeFiles <- c("comments.csv", rings[idfile])
         rings <- rings[!rings %in% removeFiles]
         
         # create empty data frame to store data

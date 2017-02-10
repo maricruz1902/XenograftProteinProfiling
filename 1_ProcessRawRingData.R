@@ -43,24 +43,25 @@ AggData <- function(loc = 'plots') {
         
         # add data to data frame corresponding for each ring in rings
         for (i in rings) {
-        ring <- as.vector(i)
-        dat <- read_csv(ring, col_types = cols(), col_names = FALSE)
-        time_shift <- dat[ ,1]
-        shift <- dat[ ,2]
-        ringStr <- strsplit(i, "\\.")[[1]]
-        ringNum <- as.numeric(ringStr[1])
-        groupNum <- (ringNum - 1) %/% 4 + 1
-        ring <- rep(ringNum, nrow(dat))
-        group <- rep(groupNum, nrow(dat))
-        groupName <- as.character(recipe$Target[[groupNum]])
-        groupName <- rep(groupName, nrow(dat))
-        channel <- recipe$Channel[[groupNum]]
-        channel <- rep(channel, nrow(dat))
-        run <- rep(name, nrow(dat))
-        time_point <- seq(1:nrow(dat))
-        tmp <- data.frame(ring, group, time_shift, shift, groupName, 
-                      channel, run, time_point)
-        df <- rbind(df, tmp)
+                ring <- as.vector(i)
+                dat <- read_csv(ring, col_types = cols(), col_names = FALSE)
+                time_shift <- dat[ ,1]
+                shift <- dat[ ,2]
+                ringStr <- strsplit(i, "\\.")[[1]]
+                ringNum <- as.numeric(ringStr[1])
+                recipe.col <- which(recipe$Ring == ringNum)
+                groupNum <- recipe$Group[recipe.col]
+                ring <- rep(ringNum, nrow(dat))
+                group <- rep(groupNum, nrow(dat))
+                groupName <- as.character(recipe$Target[[recipe.col]])
+                groupName <- rep(groupName, nrow(dat))
+                channel <- recipe$Channel[[recipe.col]]
+                channel <- rep(channel, nrow(dat))
+                run <- rep(name, nrow(dat))
+                time_point <- seq(1:nrow(dat))
+                tmp <- data.frame(ring, group, time_shift, shift, groupName, 
+                              channel, run, time_point)
+                df <- rbind(df, tmp)
         }
         
         # renames columns in df
@@ -88,8 +89,9 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         # get ring data and filter by channel
         dat <- read_csv(paste0(loc, "/", name, "_", "allRings.csv"))
         if (ch != "U"){
-        dat <- filter(dat, Channel == ch)
+                dat <- filter(dat, Channel == ch)
         }
+        dat <- filter(dat, Target != "Ignore")
         
         # get thermal control averages
         controls <- filter(dat, Target == cntl)
@@ -101,9 +103,9 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         
         # create dataframe with all controls
         for (i in ringList){
-        ringShift <- filter(controls, Ring == i) %>% select(Shift)
-        names(ringShift) <- paste('Ring', i, sep='')
-        df.controls <- cbind(df.controls, ringShift)
+                ringShift <- filter(controls, Ring == i) %>% select(Shift)
+                names(ringShift) <- paste('Ring', i, sep='')
+                df.controls <- cbind(df.controls, ringShift)
         }
         
         # averages thermal controls
@@ -276,10 +278,14 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
                 theme(legend.key = element_rect(colour = 'white',
                                                 fill = 'white'), legend.key.size = unit(0.3, "cm"))
         
+        allRings <- ggplot(dat.nothermal, aes(factor(Ring), `Net Shift`, fill = Target)) +
+                geom_bar(stat = "identity")
         # save plot, uncomment to save
         filename <- paste0(name, "_NetShift_ch", ch, "_step", step, ".png", sep="")
+        filename2 <- paste0("IndyRings_", filename)
         setwd(loc)
         ggsave(plots, file = filename, width = 10, height = 6)
+        ggsave(allRings, file = filename2, width = 21, height = 9)
         setwd(directory)
 }
 

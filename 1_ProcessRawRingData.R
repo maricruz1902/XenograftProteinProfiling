@@ -23,13 +23,13 @@ AggData <- function(loc = 'plots') {
         
         # get information of chip layout from github repository
         if (!file.exists("groupNames_XPP.csv")){
-        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_XPP.csv"
+        url <- "https://raw.githubusercontent.com/JamesHWade/XenograftProteinProfiling/master/groupNames_XPP.csv"
         filename <- basename(url)
         download.file(url, filename)
         }
         
         # define recipe as global variable for use in other functions
-        recipe <<- read_csv(filename, col_types = cols())
+        recipe <<- read_csv(filename)
         targets <- recipe$Target
         
         # generate list of rings to analyze (gets all *.csv files)
@@ -129,8 +129,19 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
 }
 
 PlotRingData <- function(cntl, ch, loc = 'plots'){
-        # loads relevant libraries
+        # loads relevant libraries and plot theme
         library(tidyverse)
+        library(RColorBrewer)
+        
+        plot_theme <- theme_bw() + 
+                        theme(text = element_text(size = 18),
+                              axis.line = element_line(colour = "black"),
+                              panel.grid.major = element_blank(), 
+                              panel.grid.minor = element_blank(),
+                              panel.border = element_blank(),
+                              panel.background = element_blank(),
+                              legend.key.size = unit(0.4, "cm"),
+                              legend.text = element_text(size = 12))
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -150,14 +161,10 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
         
         #configure plot and legend
         plots <- ggplot(dat, aes(Time, Shift, colour = factor(Target))) + 
-        xlab("Time (min)") + 
-        ylab(expression(paste("Relative Shift (",Delta,"pm)"))) +
-        scale_colour_manual(values = getPalette, name = 'Target') +
-        theme_bw() + theme(panel.grid = element_blank(), 
-                       axis.title.x=element_blank()) + 
-        theme(legend.key = element_rect(colour = 'white',
-                                    fill = 'white'), legend.key.size = unit(0.4, "cm")) + 
-        geom_vline(xintercept = c(5, 10), linetype = "longdash")
+                labs(x = "Time (min)", 
+                     y = expression(paste("Relative Shift (",Delta,"pm)"))) +
+                scale_colour_manual(values = getPalette, name = 'Target') +
+                plot_theme + geom_vline(xintercept = c(53, 39), linetype = 2)
         
         if (cntl == "raw"){
         plots <- plots + geom_point(size = 1) + facet_grid(.~ Channel)
@@ -174,12 +181,10 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
         plot2 <- g + geom_line(size = 1) + 
                 geom_ribbon(aes(ymin = Shift_mean - Shift_sd, 
                         ymax = Shift_mean + Shift_sd, linetype = NA), 
-                        fill = "slategrey", alpha = 1/3) + 
-                theme_bw() + theme(panel.grid = element_blank()) +
-                theme(legend.key = element_rect(colour = 'white', fill = 'white'), 
-                        legend.key.size = unit(0.4, "cm")) +
-                xlab("Time (min)") + 
-                ylab(expression(paste("Relative Shift (",Delta,"pm)")))
+                        fill = "slategrey", alpha = 1/4) + 
+                plot_theme +
+                labs(x = "Time (min)", 
+                        y = expression(paste("Relative Shift (",Delta,"pm)")))
         
         
         #save plot, uncomment to save
@@ -244,8 +249,18 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
 }
 
 PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
-        # load relevant libraries
+        # load relevant libraries and plot theme
         library(tidyverse)
+        
+        plot_theme <- theme_bw() + 
+                theme(text = element_text(size = 18),
+                      axis.line = element_line(colour = "black"),
+                      panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank(),
+                      panel.border = element_blank(),
+                      panel.background = element_blank(),
+                      legend.key.size = unit(0.4, "cm"),
+                      legend.text = element_text(size = 12))
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -264,16 +279,13 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         dat.nothermal <- filter(dat, Target != "thermal")
         
         plots <- ggplot(dat.nothermal, aes(Target, `Net Shift`, color = Target)) +
-                geom_boxplot() +
-                ylab(expression(paste("Net Shift ( ", Delta,"pm)"))) +
-                theme_bw() + theme(panel.grid = element_blank(), 
-                                   axis.title.x=element_blank()) + 
-                theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-                theme(legend.key = element_rect(colour = 'white',
-                        fill = 'white'), legend.key.size = unit(0.3, "cm"))
+                geom_boxplot() + plot_theme + 
+                theme(axis.text.x = element_text(colour = "grey20", size = 12, 
+                        angle = 75, hjust = .5, vjust = .5, face = "plain"))
         
         allRings <- ggplot(dat.nothermal, aes(factor(Ring), `Net Shift`, fill = Target)) +
-                geom_bar(stat = "identity")
+                geom_bar(stat = "identity") + plot_theme
+        
         # save plot, uncomment to save
         filename <- paste0(name, "_NetShift_ch", ch, "_step", step, ".png", sep="")
         filename2 <- paste0("IndyRings_", filename)

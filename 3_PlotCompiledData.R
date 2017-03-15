@@ -1,5 +1,17 @@
 library(tidyverse)
 
+# Check if data file exists in working directory
+# Download file if not found
+
+filename <- "compiledLabeled.csv"
+
+if (!file.exists("groupNames_allClusters.csv")){
+        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
+        filename <- basename(url)
+        download.file(url, filename)
+}
+
+
 dat <- read_csv("compiledLabeled.csv")
 g <- ggplot(dat, aes(Target, `Net Shift`))
 

@@ -300,23 +300,9 @@ AnalyzeData <- function() {
         PlotRingData(cntl = "thermal", ch = "U")
         PlotRingData(cntl = "raw", ch = "U")
         GetNetShifts(cntl = "thermal", ch = 1, time1 = 53, time2 = 39, step = 1)
-        GetNetShifts(cntl = "thermal", ch = 1, time1 = 25, time2 = 14, step = 2)
-        GetNetShifts(cntl = "thermal", ch = 1, time1 = 13, time2 = 2, step = 3)
         GetNetShifts(cntl = "thermal", ch = 2, time1 = 53, time2 = 39, step = 1)
-        GetNetShifts(cntl = "thermal", ch = 2, time1 = 25, time2 = 14, step = 2)
-        GetNetShifts(cntl = "thermal", ch = 2, time1 = 13, time2 = 2, step = 3)
-        GetNetShifts(cntl = "thermal", ch = "U", time1 = 53, time2 = 39, step = 1)
-        GetNetShifts(cntl = "thermal", ch = "U", time1 = 25, time2 = 14, step = 2)
-        GetNetShifts(cntl = "thermal", ch = "U", time1 = 13, time2 = 2, step = 3)
         PlotNetShifts(cntl = "thermal", ch = "1", step = 1)
-        PlotNetShifts(cntl = "thermal", ch = "1", step = 2)
-        PlotNetShifts(cntl = "thermal", ch = "1", step = 3)
         PlotNetShifts(cntl = "thermal", ch = "2", step = 1)
-        PlotNetShifts(cntl = "thermal", ch = "2", step = 2)
-        PlotNetShifts(cntl = "thermal", ch = "2", step = 3)
-        PlotNetShifts(cntl = "thermal", ch = "U", step = 1)
-        PlotNetShifts(cntl = "thermal", ch = "U", step = 2)
-        PlotNetShifts(cntl = "thermal", ch = "U", step = 3)
 }
 
 

@@ -2,7 +2,7 @@ GetName <- function(){
         # get the filename from the current working directory
         directory <- basename(getwd())
         
-        # directory naming from MRR: "CHIPNAME_gaskGASETTYPE_DATE"
+        # directory naming from MRR: "CHIPNAME_gaskGASkETTYPE_DATE"
         # extracts and returns GASKETTYPE from directory name
         name <- unlist(strsplit(directory, split = "_"))
         name <- name[2]
@@ -13,17 +13,17 @@ GetName <- function(){
 
 AggData <- function(loc = 'plots') {
         # load relevant libraries
-        library(readr)
+        library(tidyverse)
         
         # get working directory to reset at end of function
         directory <- getwd()
         
         # change this file name to use alternative ring or group labels
-        filename <- "groupNames_allClusters.csv"
+        filename <- "groupNames_XPP.csv"
         
         # get information of chip layout from github repository
-        if (!file.exists("groupNames_allClusters.csv")){
-        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
+        if (!file.exists("groupNames_XPP.csv")){
+        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_XPP.csv"
         filename <- basename(url)
         download.file(url, filename)
         }
@@ -80,8 +80,7 @@ AggData <- function(loc = 'plots') {
 
 SubtractControl <- function(loc = 'plots', ch, cntl){
         #load relevant libraries
-        library(readr)
-        library(dplyr)
+        library(tidyverse)
         
         # get working directory to reset at end of function
         directory = getwd()
@@ -131,9 +130,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
 
 PlotRingData <- function(cntl, ch, loc = 'plots'){
         # loads relevant libraries
-        library(ggplot2)
-        library(readr)
-        library(RColorBrewer)
+        library(tidyverse)
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -198,8 +195,7 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
 
 GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         # load relevant libraries
-        library(readr)
-        library(dplyr)
+        library(tidyverse)
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -249,20 +245,18 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
 
 PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         # load relevant libraries
-        library(ggplot2)
-        library(readr)
-        library(dplyr)
+        library(tidyverse)
         
         # get working directory to reset at end of function
         directory <- getwd()
         
         # get net shift data
         if (cntl != "raw"){
-                dat <- read_csv(paste0(loc, "/", name, "_netShifts_ch", ch, "step_", step,
-                                       ".csv"), col_types = cols())
+                dat <- read_csv(paste0(loc, "/", name, "_netShifts_ch", ch, 
+                        "step_", step, ".csv"), col_types = cols())
         } else {
                 dat <- read_csv(paste(loc,"/", name, "_netShifts_chU.csv", 
-                                      sep=""), col_types = cols())
+                        sep=""), col_types = cols())
                 
         }
         
@@ -276,7 +270,7 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
                                    axis.title.x=element_blank()) + 
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
                 theme(legend.key = element_rect(colour = 'white',
-                                                fill = 'white'), legend.key.size = unit(0.3, "cm"))
+                        fill = 'white'), legend.key.size = unit(0.3, "cm"))
         
         allRings <- ggplot(dat.nothermal, aes(factor(Ring), `Net Shift`, fill = Target)) +
                 geom_bar(stat = "identity")

@@ -5,14 +5,22 @@ library(tidyverse)
 
 filename <- "compiledLabeled.csv"
 
-if (!file.exists("groupNames_allClusters.csv")){
-        url <- "https://raw.githubusercontent.com/jwade1221/XenograftProteinProfiling/master/groupNames_allClusters.csv"
+if (!file.exists("compiledLabeled.csv")){
+        url <- "https://raw.githubusercontent.com/JamesHWade/XenograftProteinProfiling/master/compiledLabeled.csv"
         filename <- basename(url)
         download.file(url, filename)
 }
 
 
+# read in data
 dat <- read_csv("compiledLabeled.csv")
+
+
+# save current wd to return to later and setwd to plots folder
+directory <- getwd()
+setwd("../XPP_Plots/")
+
+# plotting all data
 g <- ggplot(dat, aes(Target, `Net Shift`))
 
 fig <- g + geom_point(aes(color = Treatment, shape = factor(Replicate)), 
@@ -21,7 +29,6 @@ fig <- g + geom_point(aes(color = Treatment, shape = factor(Replicate)),
         theme(panel.grid = element_blank(), axis.title.x=element_blank()) +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-fig
 ggsave(fig, filename = "everything_point.png", width = 8, height = 6)
 ggsave(fig, filename = "everything_point.pdf", width = 8, height = 6)
 
@@ -30,7 +37,6 @@ fig1 <- g + geom_boxplot(aes(color = Treatment)) +
         facet_grid(`Cell Line` ~ `Time Point`) + theme_bw() +
         theme(panel.grid = element_blank(), axis.title.x=element_blank()) +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
-fig1
 
 ggsave(fig1, filename = "everything_boxplot.png", width = 8, height = 6)
 ggsave(fig1, filename = "everything_boxplot.pdf", width = 8, height = 6)
@@ -40,10 +46,17 @@ ggsave(fig1, filename = "everything_boxplot.pdf", width = 8, height = 6)
 targetList <- unique(dat$Target)
 
 for(i in targetList) {
+        
         dat.tar <- filter(dat, Target == i & Treatment != "(+)-Serum" & 
                         Treatment != "DMSO")
         
+        dat.tar$Treatment <- factor(dat.tar$Treatment, level = c("(+)-Serum", 
+                "(-)-Serum", "DMSO", "Erlotinib", "GNE-317", "Apitolisib",
+                "Palbociclib"))
+        
         g <- ggplot(dat.tar, aes(Treatment, `Net Shift`, color = Treatment))
+        
+        plotName <- unlist(strsplit(i, "/"))[1]
         
         fig2 <- g + geom_point(position = "jitter", 
                                aes(shape = factor(Replicate))) + 
@@ -53,8 +66,8 @@ for(i in targetList) {
                 theme(panel.grid = element_blank(), axis.title.x=element_blank()) +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1))
         
-        ggsave(fig2, filename = paste0(i, "_point.png"), width = 8, height = 6)
-        ggsave(fig2, filename = paste0(i, "_point.pdf"), width = 8, height = 6)
+        ggsave(fig2, filename = paste0(plotName, "_point.png"), width = 8, height = 6)
+        ggsave(fig2, filename = paste0(plotName, "_point.pdf"), width = 8, height = 6)
         
         fig3 <- g + geom_boxplot() + facet_grid(`Cell Line`~`Time Point`) +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -62,8 +75,8 @@ for(i in targetList) {
                 theme(panel.grid = element_blank(), axis.title.x=element_blank()) +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1))
         
-        ggsave(fig3, filename = paste0(i, "_boxplot.png"), width = 8, heigh = 6)
-        ggsave(fig3, filename = paste0(i, "_boxplot.pdf"), width = 8, heigh = 6)
+        ggsave(fig3, filename = paste0(plotName, "_boxplot.png"), width = 8, heigh = 6)
+        ggsave(fig3, filename = paste0(plotName, "_boxplot.pdf"), width = 8, heigh = 6)
         
 }
 
@@ -114,7 +127,7 @@ theme <- theme_bw() + theme(panel.grid = element_blank(),
 
 control <- "(-)-Serum"
 treatment <- "Palbociclib"
-targets <- c("p-Rb_780", "p-Rb_807", "p-GSK3b", "p-PDK1")
+targets <- c("pRb Ser780", "pRb Ser807/11", "pGSK3ß Ser9", "pPDK1 Ser341")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)

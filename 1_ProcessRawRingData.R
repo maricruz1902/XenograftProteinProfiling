@@ -30,6 +30,7 @@ AggData <- function(loc = 'plots') {
         
         # define recipe as global variable for use in other functions
         recipe <<- read_csv(filename)
+        colnames(recipe)[1] <- "Target" # rename column to remove byte order mark
         targets <- recipe$Target
         
         # generate list of rings to analyze (gets all *.csv files)
@@ -134,14 +135,14 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
         library(RColorBrewer)
         
         plot_theme <- theme_bw() + 
-                        theme(text = element_text(size = 18),
-                              axis.line = element_line(colour = "black"),
-                              panel.grid.major = element_blank(), 
-                              panel.grid.minor = element_blank(),
-                              panel.border = element_blank(),
-                              panel.background = element_blank(),
-                              legend.key.size = unit(0.4, "cm"),
-                              legend.text = element_text(size = 12))
+                theme(text = element_text(size = 18),
+                      axis.line = element_line(colour = "black"),
+                      panel.grid.major = element_blank(), 
+                      panel.grid.minor = element_blank(),
+                      panel.border = element_blank(),
+                      panel.background = element_blank(),
+                      legend.key.size = unit(0.4, "cm"),
+                      legend.text = element_text(size = 10))
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -170,22 +171,22 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
         plots <- plots + geom_point(size = 1) + facet_grid(.~ Channel)
         } else {plots <- plots + geom_point(size = 1)}
         
-        #plot figure, uncomment to plot
-        # plots
-        
-        # alternative plot
-        dat.2 <- dat %>% group_by(Target, `Time Point`) %>% summarise_each(funs(mean, sd), c(Time, Shift))
-        head(dat.2)
+
+        # alternative plots with averaged clusters
+
+        dat.2 <- dat %>% group_by(Target, `Time Point`) %>% 
+                summarise_each(funs(mean, sd), c(Time, Shift))
+
         g <- ggplot(dat.2, aes(Time_mean, Shift_mean, color = Target))
                 
-        plot2 <- g + geom_line(size = 1) + 
+        plot2 <- g + geom_line(size = 1) + plot_theme +
+                xlab("Time (min)") +
+                ylab(expression(paste("Relative Shift (",Delta,"pm)")))
+        
+        plot3 <- plot2 + 
                 geom_ribbon(aes(ymin = Shift_mean - Shift_sd, 
                         ymax = Shift_mean + Shift_sd, linetype = NA), 
-                        fill = "slategrey", alpha = 1/4) + 
-                plot_theme +
-                labs(x = "Time (min)", 
-                        y = expression(paste("Relative Shift (",Delta,"pm)")))
-        
+                        fill = "slategrey", alpha = 1/8)
         
         #save plot, uncomment to save
         filename <- paste0(name, "_", cntl, "Control", "_ch", ch)
@@ -195,6 +196,8 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
         ggsave(plots, file = paste0(filename, ".pdf"), width = 8, height = 6)
         ggsave(plot2, file = paste0(filename2, ".png"), width = 8, height = 6)
         ggsave(plot2, file = paste0(filename2, ".pdf"), width = 8, height = 6)
+        ggsave(plot3, file = paste0(filename2, "_2.png"), width = 8, height = 6)
+        ggsave(plot3, file = paste0(filename2, "_2.pdf"), width = 8, height = 6)
         setwd(directory)
 }
 
@@ -260,7 +263,7 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
                       panel.border = element_blank(),
                       panel.background = element_blank(),
                       legend.key.size = unit(0.4, "cm"),
-                      legend.text = element_text(size = 12))
+                      legend.text = element_text(size = 10))
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -279,19 +282,25 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         dat.nothermal <- filter(dat, Target != "thermal")
         
         plots <- ggplot(dat.nothermal, aes(Target, `Net Shift`, color = Target)) +
-                geom_boxplot() + plot_theme + 
-                theme(axis.text.x = element_text(colour = "grey20", size = 12, 
-                        angle = 75, hjust = .5, vjust = .5, face = "plain"))
+                geom_boxplot() + plot_theme +
+                theme(axis.text.x = element_text(size = 10, angle = 90, h = 1),
+                        legend.position="none") +
+                ylab(expression(paste("Net Shift (",Delta,"pm)")))
         
         allRings <- ggplot(dat.nothermal, aes(factor(Ring), `Net Shift`, fill = Target)) +
-                geom_bar(stat = "identity") + plot_theme
+                geom_bar(stat = "identity") + plot_theme +
+                theme(axis.text.x = element_text(size = 10, angle = 90, h = 1)) +
+                ylab(expression(paste("Net Shift (",Delta,"pm)")))
+                xlab("Ring")
         
         # save plot, uncomment to save
-        filename <- paste0(name, "_NetShift_ch", ch, "_step", step, ".png", sep="")
+        filename <- paste0(name, "_NetShift_ch", ch, "_step", step)
         filename2 <- paste0("IndyRings_", filename)
         setwd(loc)
-        ggsave(plots, file = filename, width = 10, height = 6)
-        ggsave(allRings, file = filename2, width = 21, height = 9)
+        ggsave(plots, file = paste0(filename, ".png"), width = 8, height = 6)
+        ggsave(plots, file = paste0(filename, ".pdf"), width = 8, height = 6)
+        ggsave(allRings, file = paste0(filename2, ".png"), width = 12, height = 6)
+        ggsave(allRings, file = paste0(filename2, ".pdf"), width = 12, height = 6)
         setwd(directory)
 }
 
@@ -300,15 +309,20 @@ AnalyzeData <- function() {
         AggData()
         SubtractControl(ch = 1, cntl = "thermal")
         SubtractControl(ch = 2, cntl = "thermal")
-        SubtractControl(ch = "U", cntl = "thermal")
         PlotRingData(cntl = "thermal", ch = 1)
         PlotRingData(cntl = "thermal", ch = 2)
-        PlotRingData(cntl = "thermal", ch = "U")
-        PlotRingData(cntl = "raw", ch = "U")
         GetNetShifts(cntl = "thermal", ch = 1, time1 = 53, time2 = 39, step = 1)
         GetNetShifts(cntl = "thermal", ch = 2, time1 = 53, time2 = 39, step = 1)
         PlotNetShifts(cntl = "thermal", ch = "1", step = 1)
         PlotNetShifts(cntl = "thermal", ch = "2", step = 1)
 }
 
-
+AnalyzeAllData <- function() {
+        foldersList <- list.dirs(recursive = FALSE)
+        for (i in foldersList){
+                directory <- getwd()
+                setwd(i)
+                AnalyzeData()
+                setwd(directory)
+        }
+ }

@@ -13,7 +13,7 @@ GetName <- function(){
 
 CompileData <- function(){
         # load relevant libraries
-        library(readr)
+        library(tidyverse)
         
         # get working directory to reset at end of function
         directory <- getwd()
@@ -29,8 +29,7 @@ CompileData <- function(){
                 names <- GetName()
                 listFiles <- list.files(recursive = TRUE)
                 netFiles <- grep("net", listFiles)
-                length <- length(netFiles) - 1 # skip chU data
-                for( i in 1:length ){
+                for( i in 1:length(netFiles)){
                         dat <- read_csv(listFiles[netFiles[i]])      
                         dat$run <- names # adds run name to data frame
                         df <- rbind(df, dat) # combines runs into single data frame
@@ -43,11 +42,10 @@ CompileData <- function(){
 
 CleanData <- function(filename = 'runs.csv'){
         # load relevant libraries
-        library(dplyr)
-        library(readr)
+        library(tidyverse)
         
         # gets run information, this file was manually created
-        dat.info <- read_csv(filename, col_types = cols())
+        dat.info <- read_csv(filename)
         
         # generates list of treatments and removes NA data and blank runs
         treatments <- unique(dat.info$Treatment, na.rm = TRUE)

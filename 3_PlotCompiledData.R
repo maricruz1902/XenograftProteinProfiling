@@ -15,6 +15,9 @@ if (!file.exists("compiledLabeled.csv")){
 # read in data
 dat <- read_csv("compiledLabeled.csv")
 
+dat$Treatment <- factor(dat$Treatment, level = c("(+)-Serum", "(-)-Serum", 
+                "DMSO", "Erlotinib", "GNE-317", "Apitolisib", "Palbociclib"))
+
 
 # save current wd to return to later and setwd to plots folder
 directory <- getwd()
@@ -115,9 +118,7 @@ for (i in treatmentList) {
 # theme for treatments
 
 theme <- theme_bw() + theme(panel.grid = element_blank(),
-                            text = element_text(size = 14),
-                            axis.title.x=element_blank(),
-                            axis.text.x = element_text(size = 10, angle = 90, hjust = 1),
+                            text = element_text(size = 22),
                             axis.line = element_line(colour = "black"),
                             panel.grid.major = element_blank(), 
                             panel.grid.minor = element_blank(),
@@ -125,12 +126,29 @@ theme <- theme_bw() + theme(panel.grid = element_blank(),
 
 # Palbociclib
 
-control <- "(-)-Serum"
+control <- "DMSO"
 treatment <- "Palbociclib"
-targets <- c("pRb Ser780", "pRb Ser807/11", "pGSK3� Ser9", "pPDK1 Ser341")
+targets <- c("pRb Ser780", "pRb Ser807/11", "pGSK3ß Ser9", "pPDK1 Ser341")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
+
+dat.all <- rbind(filter(dat, Treatment == treatment), 
+        filter(dat, Treatment == control & `Time Point` == 1))
+dat.all$`Cell Line` <- factor(dat.all$`Cell Line`, labels = c("GBM 6", "GBM 26"))
+
+g.all <- ggplot(dat.all,  aes(interaction(factor(`Time Point`),
+                Treatment, Target), `Net Shift`, fill = Target)) +
+        geom_boxplot() + theme + labs(fill = "") + 
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 15)) +
+        xlab("Treatment Time") + facet_grid(`Cell Line`~.) +
+        ggtitle("Treatment: Palbociclib") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+g.all
+ggsave(g.all, filename = "Palbociclib.png", width = 12, height = 6)
+ggsave(g.all, filename = "Palbociclib.pdf", width = 12, height = 6)
+
 dat.rx <- filter(dat, Treatment == treatment & Target %in% targets)
 
 dat.rx2 <- rbind(dat.cntl, dat.rx)
@@ -138,21 +156,27 @@ dat.rx2 <- rbind(dat.cntl, dat.rx)
 dat.rx2.6 <- filter(dat.rx2, `Cell Line` == 6)
 
 g <- ggplot(dat.rx2.6, aes(interaction(factor(`Time Point`),
-                Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
+        Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_palbo_6 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_palbo_6 <- g + geom_boxplot() + theme + labs(fill = "") + 
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 4)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.2, 0.8)) +
+        ggtitle("Treatment: Palbociclib, GBM 6")
 
 fig_palbo_6
 
-ggsave(fig_palbo_6, filename = paste0('Palbociclib_GBM6.png'), width = 8, height = 6)
-ggsave(fig_palbo_6, filename = paste0('Palbociclib_GBM6.pdf'), width = 8, height = 6)
+ggsave(fig_palbo_6, filename = "Palbociclib_GBM6.png", width = 8, height = 6)
+ggsave(fig_palbo_6, filename = "Palbociclib_GBM6.pdf", width = 8, height = 6)
 
 dat.rx2.26 <- filter(dat.rx2, `Cell Line` == 26)
 
 g <- ggplot(dat.rx2.26, aes(interaction(factor(`Time Point`),
-                                       Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
+        Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_palbo_26 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_palbo_26 <- g + geom_boxplot() + theme + labs(fill = "") + 
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 3)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.8, 0.8)) +
+        ggtitle("Treatment: Palbociclib, GBM 26")
 
 fig_palbo_26
 
@@ -160,12 +184,32 @@ ggsave(fig_palbo_26, filename = paste0('Palbociclib_GBM26.png'), width = 8, heig
 ggsave(fig_palbo_26, filename = paste0('Palbociclib_GBM26.pdf'), width = 8, height = 6)
 
 # Erlotinib
-control <- "(-)-Serum"
+
+control <- "DMSO"
 treatment <- "Erlotinib"
-targets <- c("p-MAPK","p-Akt_308", "p-Akt_473", "p-S6_235", "p-S6_240", "p-mTOR")
+targets <- c("pMAPK Thr202/Tyr204","pAkt Thr308", "pAkt Ser473", 
+             "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
+
+dat.all <- rbind(filter(dat, Treatment == treatment), 
+                 filter(dat, Treatment == control & `Time Point` == 1))
+dat.all$`Cell Line` <- factor(dat.all$`Cell Line`, labels = c("GBM 6", "GBM 26"))
+
+g.all <- ggplot(dat.all,  aes(interaction(factor(`Time Point`),
+                Treatment, Target), `Net Shift`, fill = Target)) +
+        geom_boxplot() + theme + labs(fill = "") + 
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 15)) +
+        xlab("Treatment Time") + facet_grid(`Cell Line`~.) +
+        ggtitle("Treatment: Erlotinib") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+g.all
+
+ggsave(g.all, filename = "Erlotinib.png", width = 12, height = 6)
+ggsave(g.all, filename = "Erlotinib.pdf", width = 12, height = 6)
+
 dat.rx <- filter(dat, Treatment == treatment & Target %in% targets)
 
 dat.rx2 <- rbind(dat.cntl, dat.rx)
@@ -175,7 +219,11 @@ dat.rx2.6 <- filter(dat.rx2, `Cell Line` == 6)
 g <- ggplot(dat.rx2.6, aes(interaction(factor(`Time Point`),
                 Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_erlot_6 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_erlot_6 <- g + geom_boxplot() + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 6)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.3, 0.7)) +
+        ggtitle("Treatment: Erlotinib, GBM 6") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_erlot_6
 
@@ -187,7 +235,11 @@ dat.rx2.26 <- filter(dat.rx2, `Cell Line` == 26)
 g <- ggplot(dat.rx2.26, aes(interaction(factor(`Time Point`),
                 Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_erlot_26 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_erlot_26 <- g + geom_boxplot() + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 6)) +
+        xlab("Treatment Time") +  theme(legend.position = c(0.3, 0.7)) +
+        ggtitle("Treatment: Erlotinib, GBM 26") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_erlot_26
 
@@ -196,22 +248,45 @@ ggsave(fig_erlot_26, filename = paste0('Erlotinib_GBM26.pdf'), width = 8, height
 
 # GNE-317
 
-control <- "(-)-Serum"
+control <- "DMSO"
 treatment <- "GNE-317"
-targets <- c("p-Akt_308", "p-Akt_473", "p-S6_235", "p-S6_240", "p-mTOR", "p-GSK3b", "p-p70S6K")
+targets <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448", 
+             "pGSK3β Ser9", "pp70S6K Thr389")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
 dat.rx <- filter(dat, Treatment == treatment & Target %in% targets)
+
+dat.all <- rbind(filter(dat, Treatment == treatment), 
+                 filter(dat, Treatment == control & `Time Point` == 1))
+dat.all$`Cell Line` <- factor(dat.all$`Cell Line`, labels = c("GBM 6", "GBM 26"))
+
+g.all <- ggplot(dat.all,  aes(interaction(factor(`Time Point`),
+                                          Treatment, Target), `Net Shift`, fill = Target)) +
+        geom_boxplot() + theme + labs(fill = "") + 
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 15)) +
+        xlab("Treatment Time") + 
+        facet_grid(`Cell Line`~.) +
+        ggtitle("Treatment: GNE-317") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+g.all
+
+ggsave(g.all, filename = "GNE-317.png", width = 12, height = 6)
+ggsave(g.all, filename = "GNE-317.pdf", width = 12, height = 6)
 
 dat.rx2 <- rbind(dat.cntl, dat.rx)
 
 dat.rx2.6 <- filter(dat.rx2, `Cell Line` == 6)
 
 g <- ggplot(dat.rx2.6, aes(interaction(factor(`Time Point`),
-                                       Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
+        Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_gne_6 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_gne_6 <- g + geom_boxplot() + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 6)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.2, 0.8)) +
+        ggtitle("Treatment: GNE-317, GBM 6") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_gne_6
 
@@ -221,9 +296,13 @@ ggsave(fig_gne_6, filename = paste0('GNE-317_GBM6.pdf'), width = 8, height = 6)
 dat.rx2.26 <- filter(dat.rx2, `Cell Line` == 26)
 
 g <- ggplot(dat.rx2.26, aes(interaction(factor(`Time Point`),
-                                       Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
+        Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_gne_26 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_gne_26 <- g + geom_boxplot() + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 6)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.2, 0.8)) +
+        ggtitle("Treatment: GNE-317, GBM 26") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_gne_26
 
@@ -231,16 +310,34 @@ ggsave(fig_gne_26, filename = paste0('GNE-317_GBM26.png'), width = 8, height = 6
 ggsave(fig_gne_26, filename = paste0('GNE-317_GBM26.pdf'), width = 8, height = 6)
 
 
-#GDC-0980
+#Apitolisib
 
-control <- "(-)-Serum"
-treatment <- "GDC0980"
-targets <- c("p-Akt_308", "p-Akt_473", "p-S6_235", "p-S6_240", 
-             "p-mTOR", "p-GSK3b", "p-p70S6K")
+control <- "DMSO"
+treatment <- "Apitolisib"
+targets <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448", 
+             "pGSK3β Ser9", "pp70S6K Thr389")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
 dat.rx <- filter(dat, Treatment == treatment & Target %in% targets)
+
+dat.all <- rbind(filter(dat, Treatment == treatment), 
+                 filter(dat, Treatment == control & `Time Point` == 1))
+dat.all$`Cell Line` <- factor(dat.all$`Cell Line`, labels = c("GBM 6", "GBM 26"))
+
+g.all <- ggplot(dat.all,  aes(interaction(factor(`Time Point`),
+                                          Treatment, Target), `Net Shift`, fill = Target)) +
+        geom_boxplot() + theme + labs(fill = "") + 
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 15)) +
+        xlab("Treatment Time") + 
+        facet_grid(`Cell Line`~.) +
+        ggtitle("Treatment: Apitolisib") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+g.all
+
+ggsave(g.all, filename = "Apitolisib.png", width = 12, height = 6)
+ggsave(g.all, filename = "Apitolisib.pdf", width = 12, height = 6)
 
 dat.rx2 <- rbind(dat.cntl, dat.rx)
 
@@ -249,53 +346,60 @@ dat.rx2.6 <- filter(dat.rx2, `Cell Line` == 6)
 g <- ggplot(dat.rx2.6, aes(interaction(factor(`Time Point`),
         Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_gdc_6 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_gdc_6 <- g + geom_boxplot() + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 6)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.2, 0.8)) +
+        ggtitle("Treatment: Apitolisib, GBM 6") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_gdc_6
 
-ggsave(fig_gdc_6, filename = paste0('GDC-0980_GBM6.png'), width = 8, height = 6)
-ggsave(fig_gdc_6, filename = paste0('GDC-0980_GBM6.pdf'), width = 8, height = 6)
+ggsave(fig_gdc_6, filename = paste0('Apitolisib_GBM6.png'), width = 8, height = 6)
+ggsave(fig_gdc_6, filename = paste0('Apitolisib_GBM6.pdf'), width = 8, height = 6)
 
 dat.rx2.26 <- filter(dat.rx2, `Cell Line` == 26)
 
 g <- ggplot(dat.rx2.26, aes(interaction(factor(`Time Point`),
         Treatment, Target, factor(`Cell Line`)), `Net Shift`, fill = Target))
 
-fig_gdc_26 <- g + geom_boxplot() + theme + labs(fill = "")
+fig_gdc_26 <- g + geom_boxplot() + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("Control", "1 h", "24 h"), 6)) +
+        xlab("Treatment Time") + theme(legend.position = c(0.2, 0.8)) +
+        ggtitle("Treatment: Apitolisib, GBM 26") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_gdc_26
 
-ggsave(fig_gdc_26, filename = paste0('GDC-0980_GBM26.png'), width = 8, height = 6)
-ggsave(fig_gdc_26, filename = paste0('GDC-0980_GBM26.pdf'), width = 8, height = 6)
+ggsave(fig_gdc_26, filename = paste0('Apitolisib_GBM26.png'), width = 8, height = 6)
+ggsave(fig_gdc_26, filename = paste0('Apitolisib_GBM26.pdf'), width = 8, height = 6)
 
 
-# GDC-0980 vs GNE-317
+# Apitolisib vs GNE-317
 
-treatment <- c("GDC0980", "GNE-317")
-
-target_treated <- c("p-Akt_308", "p-Akt_473", "p-S6_240", "p-S6_235", "p-GSK3b")
+treatment <- c("Apitolisib", "GNE-317")
+target_treated <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448", 
+             "pGSK3β Ser9", "pp70S6K Thr389")
 
 dat.rx2 <- filter(dat, Treatment == treatment & Target %in% target_treated)
 
 g <- ggplot(dat.rx2, aes(interaction(factor(`Time Point`), Treatment, Target),
-                         `Net Shift`, fill = factor(`Time Point`)))
+                         `Net Shift`, fill = Target))
 
-fig_gvsg <- g + geom_boxplot() + facet_grid(`Cell Line`~.) +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ggtitle("GDC0980 vs GNE-317") + theme_bw() +
-        theme(panel.grid = element_blank(), axis.title.x=element_blank()) +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-        labs(fill = "Time Point") +
-        geom_vline(xintercept = c(4.5, 8.5, 12.5, 16.5), linetype = "longdash") +
-        annotate("text", x = 2.5, y = 3500, label = "p-Akt Thr 308") +
-        annotate("text", x = 6.5, y = 3500, label = "p-Akt Ser 473") +
-        annotate("text", x = 10.5, y = 3500, label = "p-GSK-3b") +
-        annotate("text", x = 14.5, y = 3500, label = "p-S6 Ser235") +
-        annotate("text", x = 18.5, y = 3500, label = "p-S6 Ser240")
+fig_gvsg <- g + geom_boxplot() + facet_grid(.~`Cell Line`) + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("GNE-317 1h", "GNE-317 24h", 
+                "Apitolisib 1h", "Apitolisib 24h"), 6)) +
+        xlab("Treatment Time") + ggtitle("Treatment: Apitolisib vs GBM 26") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 fig_gvsg
 
- ggsave(fig_gvsg, filename = paste0('GDCvsGNE.png'), width = 8, height = 6)
-ggsave(fig_gvsg, filename = paste0('GDCvsGNE.pdf'), width = 8, height = 6)
+fig_gvsg.2 <- g + geom_boxplot() + facet_grid(`Time Point`~`Cell Line`) + theme + labs(fill = "") +
+        scale_x_discrete(labels = rep(c("GNE-317","Apitolisib"), 6)) +
+        xlab("Treatment Time") + ggtitle("Treatment: Apitolisib vs GBM 26") +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+fig_gvsg.2
+
+ggsave(fig_gvsg, filename = paste0('ApitolisibvsGNE317.png'), width = 8, height = 6)
+ggsave(fig_gvsg, filename = paste0('ApitolisibvsGNE317.pdf'), width = 8, height = 6)
 
 # make some heatmaps

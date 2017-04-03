@@ -75,6 +75,7 @@ CleanData <- function(filename = 'runs.csv'){
         
         # remove reduntant column
         df$run <- NULL
+        df$Step <- NULL
         df$Runs <- NULL
         df$Channel <- NULL
         

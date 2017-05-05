@@ -1,6 +1,7 @@
 library(tidyverse)
 
-# Check if data file exists in working directory
+.
+0# Check if data file exists in working directory
 # Download file if not found
 
 filename <- "compiledLabeled.csv"
@@ -14,9 +15,13 @@ if (!file.exists("compiledLabeled.csv")){
 
 # read in data
 dat <- read_csv("compiledLabeled.csv")
-
 dat$Treatment <- factor(dat$Treatment, level = c("(+)-Serum", "(-)-Serum", 
                 "DMSO", "Erlotinib", "GNE-317", "Apitolisib", "Palbociclib"))
+targets <- c("pPDK1 Ser341", "pGSK3β Ser9", "pp70S6K Thr389", "pS6 Ser235/6", 
+             "pRb Ser780", "pAkt Thr308", "pS6 Ser240/4", "pRb Ser807/11",
+             "pmTOR Ser2448", "pMAPK Thr202/Tyr204", "pAkt Ser473", 
+             "pSrc Tyr416")
+dat <- filter(dat, Target %in% targets | grepl("Ser9", Target))
 
 
 # save current wd to return to later and setwd to plots folder
@@ -32,6 +37,7 @@ fig <- g + geom_point(aes(color = Treatment, shape = factor(Replicate)),
         theme(panel.grid = element_blank(), axis.title.x=element_blank()) +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+fig
 ggsave(fig, filename = "everything_point.png", width = 8, height = 6)
 ggsave(fig, filename = "everything_point.pdf", width = 8, height = 6)
 
@@ -90,7 +96,7 @@ treatmentList <- unique(dat$Treatment)
 
 for (i in treatmentList) {
         
-        dat.rx <- filter(dat, Treatment == i & !grepl("Abl|p53|HIF", Target))
+        dat.rx <- filter(dat, Treatment == i)
         
         g <- ggplot(dat.rx, aes(Target, `Net Shift`, color = Target))
         
@@ -128,7 +134,7 @@ theme <- theme_bw() + theme(panel.grid = element_blank(),
 
 control <- "DMSO"
 treatment <- "Palbociclib"
-targets <- c("pRb Ser780", "pRb Ser807/11", "pGSK3ß Ser9", "pPDK1 Ser341")
+targets <- c("pRb Ser780", "pRb Ser807/11", "pGSK3β Ser9", "pPDK1 Ser341")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
@@ -251,7 +257,7 @@ ggsave(fig_erlot_26, filename = paste0('Erlotinib_GBM26.pdf'), width = 8, height
 control <- "DMSO"
 treatment <- "GNE-317"
 targets <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448", 
-             "pGSK3β Ser9", "pp70S6K Thr389")
+             "pGSK3Î² Ser9", "pp70S6K Thr389")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
@@ -315,7 +321,7 @@ ggsave(fig_gne_26, filename = paste0('GNE-317_GBM26.pdf'), width = 8, height = 6
 control <- "DMSO"
 treatment <- "Apitolisib"
 targets <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448", 
-             "pGSK3β Ser9", "pp70S6K Thr389")
+             "pGSK3Î² Ser9", "pp70S6K Thr389")
 
 dat.cntl <- filter(dat, Treatment == control & Target %in% targets &
                            `Time Point` == 1)
@@ -336,8 +342,8 @@ g.all <- ggplot(dat.all,  aes(interaction(factor(`Time Point`),
 
 g.all
 
-ggsave(g.all, filename = "Apitolisib.png", width = 12, height = 6)
-ggsave(g.all, filename = "Apitolisib.pdf", width = 12, height = 6)
+ggsave(g.all, filename = "Apitolisib.png", width = 14, height = 8)
+ggsave(g.all, filename = "Apitolisib.pdf", width = 14, height = 8)
 
 dat.rx2 <- rbind(dat.cntl, dat.rx)
 
@@ -378,7 +384,7 @@ ggsave(fig_gdc_26, filename = paste0('Apitolisib_GBM26.pdf'), width = 8, height 
 
 treatment <- c("Apitolisib", "GNE-317")
 target_treated <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4", "pmTOR Ser2448", 
-             "pGSK3β Ser9", "pp70S6K Thr389")
+             "pGSK3Î² Ser9", "pp70S6K Thr389")
 
 dat.rx2 <- filter(dat, Treatment == treatment & Target %in% target_treated)
 

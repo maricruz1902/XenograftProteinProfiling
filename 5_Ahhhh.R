@@ -68,4 +68,5 @@ hmcol <- colorRampPalette(c("darkblue", "white", "darkred"))(256)
 
 heatmap(m.alt$r, col = hmcol)
 
-# I need to find a way to get unique identifiers before dcast so that the values don't get combined
+# I need to find a way to get unique identifiers before dcast so that the 
+# values don't get combined

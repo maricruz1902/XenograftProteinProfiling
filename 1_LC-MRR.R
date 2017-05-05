@@ -45,7 +45,7 @@ AggData <- function(loc = 'plots') {
         # add data to data frame corresponding for each ring in rings
         for (i in rings) {
                 ring <- as.vector(i)
-                dat <- read_csv(ring, col_types = cols(), col_names = FALSE)
+                dat <- read_csv(ring, col_names = FALSE)
                 time_shift <- dat[ ,1]
                 shift <- dat[ ,2]
                 ringStr <- strsplit(i, "\\.")[[1]]
@@ -157,22 +157,27 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
         dat.plot <- filter(dat, Ring != 4)
         
         #configure plot and legend
-        plots <- ggplot(dat.plot) + 
-                geom_line(aes(x = Time, y = Shift, color = factor(Ring)), size = 0.5) +
+        plots <- ggplot(dat.plot, aes(x = Time, y = Shift, color = factor(Ring))) + 
+                geom_line() +
                 labs(color = "Rings", x = "Time (min)", 
                      y = expression(paste("Relative Shift (",Delta,"pm)"))) +
-                plot_theme + facet_wrap(~Ring)
+                plot_theme #+ facet_wrap(~Ring)
         
         
-        run.1 <- plots + xlim(0, 30)
+        run.1 <- plots + facet_wrap(~Ring)
         run.1
         
-        run.2 <- plots + xlim(30, 60)
+        ggsave(plots, filename = "AllRings_FullRun.png", width = 8, height = 6)
+        ggsave(run.1, filename = "AllRings_FullRun_Facet.png", width = 8, height = 6)
+        
+        
+        run.2 <- plots + xlim(20, 110)
         run.2
         
-        run.3 <- plots + xlim(60, 90)
+        run.3 <- plots + xlim(95, 125) + ylim(-80, -40)
         run.3
         
+        ggsave(run.3, filename = "AllRings_Subset.png", width = 8, height = 6)
         
         
         if (cntl == "raw"){
@@ -182,6 +187,7 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
 
         # alternative plots with averaged clusters
 
+        dat.2 <- filter(dat.plot, Ring == c(10, 12))
         dat.2 <- dat.plot %>% group_by(Target, `Time Point`) %>% 
                 summarise_each(funs(mean, sd), c(Time, Shift))
 
@@ -194,10 +200,65 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
                                     fill = "slategrey", alpha = 1/4) +
                 theme(legend.position = "none")
         
+        ggsave(plots.avg, filename = "Average_FullRun.png", width = 8, height = 6)
+        
+        
+        
+        
+        
+        # smoothing data with rolling (moving) average
+        library(zoo)
+        library(reshape2)
+        dat.plot$Smooth <- rollmean(dat.plot$Shift, k = 51, fill = "extend")
+        dat.3 <- dat.plot[,-c(1,2,5,6,7,8)]
+        dat.melt <- melt(dat.3, id.vars = "Time")
+        
+        
+        ggplot(dat.plot, aes(x = Time, y = Shift)) + geom_line() + plot_theme +
+                xlim(80,110)
+        ggplot(dat.melt, aes(x = Time, y = value, color = variable)) + geom_line(size = 1) +
+                plot_theme + xlim(30, 60)
+        
+        
+        # smooth with subset
+        dat.subset <- filter(dat.plot, between(Time, 60, 90))
+        dat.subset$Shift <- dat.subset$Shift - dat.subset$Shift[1]
+        dat.subset$Time <- dat.subset$Time - dat.subset$Time[1]
+        dat.subset$Smooth <- rollmean(dat.subset$Shift, k = 21, fill = "extend")
+        dat.smoothsub <- dat.subset[,-c(1,2,5,6,7,8)]
+        dat.submelt <- melt(dat.smoothsub, id.vars = "Time")
+        
+        dat.a <- filter(dat.smoothsub, between(Time, 20, 21))
+        sd(dat.a$Shift)/sd(dat.a$Smooth)
+        
+        3*sd(dat.a$Smooth)
+        3*sd(dat.a$Shift)
+        
+        subplot <- ggplot(dat.submelt, aes(x = Time, y = value, color = variable)) + 
+                geom_line(size = 1) + plot_theme + xlab("Time (min)") +
+                ylab(expression(paste("Relative Shift (",Delta,"pm)")))
+        
+        subplot
+        
+        subplot.f <- subplot + facet_grid(variable~.)
+        subplot.f
+        
+        
+        ggsave(subplot, filename = "SingleRing_Smoothed_Subset.png", width = 8, height = 6)
+        ggsave(subplot.f, filename = "singleRing_Smoothed_Subset_Facet.png", width = 8, height = 6)
+        
+        
+        
+        dat.smooth <- filter(dat, Target != "thermal")
+        plots.smooth <- ggplot(dat.smooth, aes(x = Time, y = Shift)) +
+                geom_smooth(se = TRUE, method = ) + plot_theme
+        
+        plots.smooth + xlim(30,60)
+        
         plots.avg + xlim(0, 30)
         plots.avg + xlim(30, 60)
         plots.avg + xlim(60, 90)
-        plots.avg + xlim(90, 120)
+        plots.avg + xlim(95, 125) + ylim(-80, -40)
         plots.avg + xlim(120, 150)
         plots.avg + xlim(150, 180)
         plots.avg + xlim(180, 210)

@@ -11,49 +11,56 @@ library(shiny)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-   
-   # Application title
-   titlePanel("Analysis of Resonator ImmunoAssays (ARIA)"),
-   
-   # Sidebar with a slider input for number of bins 
-   sidebarLayout(
-      sidebarPanel(
-              textInput("plotName", label = "Plot Name", 
-                        placeholder = "e.g., XPP-01a"),
-              textInput("cntl", label = "Control Rings", 
-                        placeholder = "e.g., thermal, raw, blank"),
-              fileInput("chipLayout", "Select Chip Layout",
-                        accept = c("text/csv",
-                                   "text/comma-separated-values,text/plain",
-                                   ".csv")),
-              fileInput("filesList", multiple = TRUE, "Select Rings",
-                        accept = c("text/csv",
-                                   "text/comma-separated-values,text/plain",
-                                   ".csv")),
-              radioButtons("ch", label = "Experiment Type:", 
-                           choices = c("U-Channel" = "u.ch",
-                                       "2 Channel" = "two.ch")),
-              radioButtons("avg", label = "Average Clusters:",
-                           choices = c("No", "Yes")),
-              actionButton("goButton", "Go!")
-      ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-         
-                plotOutput("run"), plotOutput("netShifts")
-      )
-   )
+        
+        # Application title
+        titlePanel("Analysis of Resonator ImmunoAssays (ARIA)"),
+        
+        # Sidebar with a slider input for number of bins 
+        sidebarLayout(
+                sidebarPanel(
+                        textInput("plotName", label = "Plot Name", 
+                                  placeholder = "e.g., XPP-01a"),
+                        textInput("cntl", label = "Control Rings", 
+                                  placeholder = "e.g., thermal, raw, blank"),
+                        fileInput("chipLayout", "Select Chip Layout",
+                                  accept = c("text/csv",
+                                             "text/comma-separated-values,text/plain",
+                                             ".csv")),
+                        fileInput("filesList", multiple = TRUE, "Select Rings",
+                                  accept = c("text/csv",
+                                             "text/comma-separated-values,text/plain",
+                                             ".csv")),
+                        radioButtons("ch", label = "Experiment Type:", 
+                                     choices = c("U-Channel" = "u.ch",
+                                                 "2 Channel" = "two.ch")),
+                        radioButtons("avg", label = "Average Clusters:",
+                                     choices = c("No", "Yes")),
+                        textInput("time2", label = "Start Time (min)",
+                                  placeholder = "e.g., 22"),
+                        textInput("time1", label = "End Time (min)",
+                                  placeholder = "e.g., 42"),
+                        actionButton("keepData", "Download Data"),
+                        actionButton("goButton", "Go!")
+                ),
+                
+                # Show a plot of the generated distribution
+                mainPanel(
+                        
+                        plotOutput("run"), plotOutput("netShifts")
+                )
+        )
 )
 
 # Define server logic
 server <- function(input, output) {
         
         output$run <- renderPlot({
-      
+                
                 req(input$goButton)
                 req(input$plotName)
+                req(input$cntl)
                 library(tidyverse)
+                library(ggthemes)
                 
                 # define recipe as global variable for use in other functions
                 recipe <<- read_csv(input$chipLayout[,4])
@@ -89,7 +96,6 @@ server <- function(input, output) {
                         df <- rbind(df, tmp)
                 }
                 
-                print("made it")
                 # renames columns in df
                 names(df) <- c("Ring", "Group", "Time", "Shift", "Target", 
                                "Channel", "Experiment", "Time Point")
@@ -100,12 +106,14 @@ server <- function(input, output) {
                         ringList <- unique(controls$Ring)
                         
                         # gets times from first thermal control
-                        times <- filter(controls, Ring == ringList[1]) %>% select(Time)
+                        times <- filter(controls, 
+                                        Ring == ringList[1]) %>% select(Time)
                         df.controls <- data.frame(times)
                         
                         # create dataframe with all controls
                         for (i in ringList){
-                                ringShift <- filter(controls, Ring == i) %>% select(Shift)
+                                ringShift <- filter(controls, Ring == i) %>% 
+                                        select(Shift)
                                 names(ringShift) <- paste('Ring', i, sep='')
                                 df.controls <- cbind(df.controls, ringShift)
                         }
@@ -113,55 +121,68 @@ server <- function(input, output) {
                         # averages thermal controls
                         cols <- ncol(df.controls)
                         if (length(unique(controls$Ring)) != 1) {
-                                df.controls$avgControls <- rowMeans(df.controls[,c(2:cols)])
+                                df.controls$avgControls <- 
+                                        rowMeans(df.controls[,c(2:cols)])
                         } else {
-                                df.controls$avgControls <- df.controls[,c(2:cols)]
+                                df.controls$avgControls <- 
+                                        df.controls[,c(2:cols)]
                         }
                         avgControls <- as.vector(df.controls$avgControls)
                         
                         #subtracts thermal controls from each ring
                         ringNames <- unique(df$Ring)
                         for(i in ringNames){
-                                ringDat <- filter(df, Ring == i) %>% select(Shift)
+                                ringDat <- filter(df, Ring == i) %>% 
+                                        select(Shift)
                                 ringTC <- ringDat - avgControls
                                 df[df$Ring == i, 4] <- ringTC
                         }
                 }
                 
-                # plot theme
-                plot_theme <- theme_bw() + 
-                        theme(text = element_text(size = 18),
-                              axis.line = element_line(colour = "black"),
-                              panel.grid.major = element_blank(),
-                              panel.grid.minor = element_blank(),
-                              panel.border = element_blank(),
-                              panel.background = element_blank(),
-                              legend.key.size = unit(0.4, "cm"),
-                              legend.text = element_text(size = 10))
-                
                 if (input$avg == "Yes"){
-                        dat.avg <- df %>% group_by(Target, `Time Point`) %>% 
-                                summarise_each(funs(mean, sd), c(Time, Shift))
+                        if (input$ch == "two.ch"){
+                                dat.avg <- df %>%
+                                        group_by(Target, `Time Point`, 
+                                                 Channel) %>% 
+                                        summarise_each(funs(mean, sd), 
+                                                       c(Time, Shift))
+                        } else {
+                                dat.avg <- df %>%
+                                        group_by(Target, `Time Point`) %>% 
+                                        summarise_each(funs(mean, sd), 
+                                                       c(Time, Shift))
+                        }
                         
-                        plots <- ggplot(dat.avg, aes(Time_mean, Shift_mean, color = Target)) + 
-                                geom_line(size = 1) + plot_theme +
+                        
+                        plots <- ggplot(dat.avg, aes(Time_mean, Shift_mean, 
+                                                     color = Target)) + 
+                                geom_line() + 
                                 geom_ribbon(aes(ymin = Shift_mean - Shift_sd, 
-                                                ymax = Shift_mean + Shift_sd, linetype = NA), 
+                                                ymax = Shift_mean + Shift_sd, 
+                                                linetype = NA), 
                                             fill = "slategrey", alpha = 1/8) +
                                 labs(x = "Time (min)",
-                                     y = expression(paste("Relative Shift (",Delta,"pm)")))
+                                     y = expression(paste("Relative Shift (",
+                                                          Delta,"pm)")),
+                                     color = "Target") +
+                                ggtitle(input$plotName)
+                        theme_few(base_size = 22)
                         
                 } else {
-                        plots <- ggplot(df, aes(Time, Shift, group = factor(Ring), 
-                                         color = factor(Target))) + 
-                        labs(x = "Time (min)", 
-                             y = expression(paste("Relative Shift (",Delta,"pm)"))) +
-                        plot_theme + geom_line(size = 1) + 
-                        ggtitle(input$plotName)
+                        plots <- ggplot(df, aes(Time, Shift, 
+                                                group = factor(Ring),
+                                                color = factor(Target))) + 
+                                labs(x = "Time (min)", 
+                                     y = expression(paste("Relative Shift (",
+                                                          Delta,"pm)")),
+                                     color = "Target") +
+                                geom_line() + 
+                                ggtitle(input$plotName) +
+                                theme_few(base_size = 22)
                 }
                 
                 
-                if (input$ch == "two.ch" && input$avg != "Yes") {
+                if (input$ch == "two.ch") {
                         plots <- plots + facet_grid(.~Channel)
                 }
                 
@@ -174,13 +195,14 @@ server <- function(input, output) {
                 #                      input$cntl, ".csv"))
                 
                 plots
-       
+                
         })
-        output$downloadPlot <- downloadHandler(
-                filename = function() { paste(input$plotName, '.png', sep='') },
+        output$downloadPlot <- downloadHandler({
+                filename = function() { paste(input$plotName, '.png', sep='') }
                 content = function(file) {
                         ggsave(plots, plot = plotInput(), device = "png")
                 }
+        }
         )
 }
 

@@ -276,4 +276,4 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
 GetName()
 AggData()
 SubtractControl(ch = 2, cntl = "thermal")
-PlotRingData(ch = 2, cntl = "thermal")
+PlotRingData(ch = 2, cntl = "thermal") 

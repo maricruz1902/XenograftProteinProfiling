@@ -131,7 +131,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
                              ".csv", sep = ''))   
 }
 
-PlotIndyRings <- function() {
+PlotIndyRings <- function(loc = 'plots', delay = 30) {
         library(tidyverse)
         library(RColorBrewer)
         library(ggthemes)
@@ -140,12 +140,12 @@ PlotIndyRings <- function() {
         directory <- getwd()
         
         # use thermally controlled data if desired
-        dat <- read_csv(paste0("plots/", name, "_allRings.csv"))
+        dat <- read_csv(paste0(loc, "/", name, "_allRings.csv"))
         dat <- filter(dat, Target != "thermal")
         dat$Ring <- factor(dat$Ring)
         
         #separates into subsets corrdinating to each PS injection
-        startTime <- 30
+        startTime <- delay
         df0 <- subset(dat, Time > startTime & Time < startTime + 30)
         df1 <- subset(dat, Time > startTime + 30 & Time < startTime + 61)
         df2 <- subset(dat, Time > startTime + 61 & Time < startTime + 92)
@@ -194,16 +194,36 @@ PlotIndyRings <- function() {
                 ylab(expression(paste("Relative Shift (",Delta,"pm)"))) +
                 theme_few()
         
-        ggsave(plot, filename = paste0("plots/", name, "_IndyRings.png"), 
+        ggsave(plot, filename = paste0(loc, "/", name, "_IndyRings.png"), 
                width = 8, height = 6)
+        
+        write_csv(df, paste0(loc, '/', name, "_allRings_byRing.csv"))
+        
 }
 
-DataSplitting <- function(){
+CheckRingQuality <- function(loc = 'plots', varLevel = 10) {
+        library(tidyverse)
+        
+        dat <- read_csv(paste0(loc,"/", name, "_allRings_byRing.csv"))
+        
+        dat.avg <- dat %>% group_by(Ring) %>%
+                summarise_each(funs(var), c(Shift))
+        ringWinners <- filter(dat.avg, Shift < varLevel) %>% select(Ring)
+        write_csv(ringWinners, paste0(loc, '/', name, "_ringWinners.csv"))
+}
+
+DataSplitting <- function(winner, loc = 'plots', delay = 30){
         library(tidyverse)
         library(zoo)
         library(pracma)
         
-        dat <- read_csv(paste0("plots/", name, "_allRings.csv"))
+        dat <- read_csv(paste0(loc, '/', name, "_allRings.csv"))
+        
+        if (winner == TRUE) {
+                winners <- read_csv(paste0(loc, '/', name, "_ringWinners.csv"))
+                rings <- as.vector(unlist(winners))
+                dat <- filter(dat, grepl(paste(rings, collapse = "|"), Ring))
+        }
         
         kSmooth <- 7
         flSavgol <- 31
@@ -222,7 +242,7 @@ DataSplitting <- function(){
                                  dorder = dSavgol)
         
         #separates into subsets corrdinating to each PS injection
-        startTime <- 30
+        startTime <- delay
         df0 <- subset(dat.avg, Time_mean > startTime & 
                               Time_mean < startTime + 30)
         df1 <- subset(dat.avg, Time_mean > startTime + 30 & 
@@ -300,7 +320,7 @@ DataSplitting <- function(){
                                          "35 kDa", "130 kDa", "304 kDa"))
         
         write_csv(x = df, 
-                  path = paste0("plots/", name, "inj_combined.csv"))
+                  path = paste0(loc, "/", name, "inj_combined.csv"))
 }
 
 PlotAvgData <- function(loc = 'plots'){
@@ -407,12 +427,17 @@ PlotAvgData <- function(loc = 'plots'){
         setwd(directory)
 }
 
-AnalyzeData <- function(){
+AnalyzeData <- function(cntl = FALSE, loc = 'plots', winner = FALSE, delay = 30){
+        #setwd(choose.dir())
         GetName()
-        AggData()
-        DataSplitting()
-        PlotIndyRings()
-        PlotAvgData()
+        AggData(loc)
+        if (cntl == TRUE){
+                SubtractControl(loc, ch = 'U', cntl = "thermal")
+        }
+        PlotIndyRings(loc, delay)
+        CheckRingQuality(loc, varLevel = 10)
+        DataSplitting(winner, loc, delay)
+        PlotAvgData(loc)
 }
 
 BatchAnalyze <- function(){

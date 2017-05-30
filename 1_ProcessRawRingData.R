@@ -285,8 +285,8 @@ AnalyzeData <- function() {
         SubtractControl(ch = 2, cntl = "thermal")
         PlotRingData(cntl = "thermal", ch = 1)
         PlotRingData(cntl = "thermal", ch = 2)
-        GetNetShifts(cntl = "thermal", ch = 1, time1 = 53, time2 = 39, step = 1)
-        GetNetShifts(cntl = "thermal", ch = 2, time1 = 53, time2 = 39, step = 1)
+        GetNetShifts(cntl = "thermal", ch = 1, time1 = 52, time2 = 41, step = 1)
+        GetNetShifts(cntl = "thermal", ch = 2, time1 = 52, time2 = 41, step = 1)
         PlotNetShifts(cntl = "thermal", ch = "1", step = 1)
         PlotNetShifts(cntl = "thermal", ch = "2", step = 1)
 }

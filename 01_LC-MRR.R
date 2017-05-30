@@ -79,7 +79,9 @@ AggData <- function(loc = 'plots') {
         setwd(directory)
 }
 
-SubtractControl <- function(loc = 'plots', ch, cntl){
+SubtractControl <- function(loc = 'plots', 
+                            ch, 
+                            cntl){
         #load relevant libraries
         library(tidyverse)
         
@@ -131,7 +133,8 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
                              ".csv", sep = ''))   
 }
 
-PlotIndyRings <- function(loc = 'plots', delay = 30) {
+PlotIndyRings <- function(loc = 'plots', 
+                          delay = 30) {
         library(tidyverse)
         library(RColorBrewer)
         library(ggthemes)
@@ -201,18 +204,22 @@ PlotIndyRings <- function(loc = 'plots', delay = 30) {
         
 }
 
-CheckRingQuality <- function(loc = 'plots', varLevel = 10) {
+CheckRingQuality <- function(loc = 'plots', 
+                             varLevel = 10) {
         library(tidyverse)
         
         dat <- read_csv(paste0(loc,"/", name, "_allRings_byRing.csv"))
         
         dat.avg <- dat %>% group_by(Ring) %>%
                 summarise_each(funs(var), c(Shift))
+        
         ringWinners <- filter(dat.avg, Shift < varLevel) %>% select(Ring)
         write_csv(ringWinners, paste0(loc, '/', name, "_ringWinners.csv"))
 }
 
-DataSplitting <- function(winner, loc = 'plots', delay = 30){
+DataSplitting <- function(winner, 
+                          loc = 'plots', 
+                          delay = 30){
         library(tidyverse)
         library(zoo)
         library(pracma)
@@ -427,17 +434,20 @@ PlotAvgData <- function(loc = 'plots'){
         setwd(directory)
 }
 
-AnalyzeData <- function(cntl = FALSE, loc = 'plots', winner = FALSE, delay = 30){
+AnalyzeData <- function(cntl = FALSE, 
+                        loc = 'plots', 
+                        winner = FALSE, 
+                        delay = 30){
         #setwd(choose.dir())
         GetName()
         AggData(loc)
         if (cntl == TRUE){
                 SubtractControl(loc, ch = 'U', cntl = "thermal")
         }
-        PlotIndyRings(loc, delay)
+        #PlotIndyRings(loc, delay)
         CheckRingQuality(loc, varLevel = 10)
-        DataSplitting(winner, loc, delay)
-        PlotAvgData(loc)
+        #DataSplitting(winner, loc, delay)
+        #PlotAvgData(loc)
 }
 
 BatchAnalyze <- function(){

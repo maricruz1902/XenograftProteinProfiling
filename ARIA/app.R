@@ -39,8 +39,11 @@ ui <- fluidPage(
                                   placeholder = "e.g., 22"),
                         textInput("time1", label = "End Time (min)",
                                   placeholder = "e.g., 42"),
-                        actionButton("keepData", "Download Data"),
-                        actionButton("goButton", "Go!")
+                        actionButton("goRun", "Plot Run"),
+                        actionButton("goNetShifts", "Plot Net Shifts"),
+                        downloadButton("downloadIndyData", "Individual Ring Data"),
+                        downloadButton("downloadAvgData", "Average Ring Data"),
+                        downloadButton("downloadNetShifts", "Net Shift Data")
                 ),
                 
                 # Show a plot of the generated distribution
@@ -56,7 +59,7 @@ server <- function(input, output) {
         
         output$run <- renderPlot({
                 
-                req(input$goButton)
+                req(input$goRun)
                 req(input$plotName)
                 req(input$cntl)
                 library(tidyverse)
@@ -165,8 +168,8 @@ server <- function(input, output) {
                                      y = expression(paste("Relative Shift (",
                                                           Delta,"pm)")),
                                      color = "Target") +
-                                ggtitle(input$plotName)
-                        theme_few(base_size = 22)
+                                ggtitle(input$plotName) +
+                                theme_few(base_size = 22)
                         
                 } else {
                         plots <- ggplot(df, aes(Time, Shift, 
@@ -186,23 +189,121 @@ server <- function(input, output) {
                         plots <- plots + facet_grid(.~Channel)
                 }
                 
-                #ggsave(plots, filename = paste0(input$plotName, "_",
-                #                                input$ch, "_", 
-                #                                input$cntl, ".png"),
-                #       device = "png", width = 8, height = 6)
-                
-                #write_csv(dat, paste0(input$plotName, "_", input$ch, "_",
-                #                      input$cntl, ".csv"))
-                
+                plotData <<- df
+                avgPlotData <<- dat.avg
                 plots
                 
         })
-        output$downloadPlot <- downloadHandler({
-                filename = function() { paste(input$plotName, '.png', sep='') }
-                content = function(file) {
-                        ggsave(plots, plot = plotInput(), device = "png")
+        
+        output$netShifts <- renderPlot({
+                
+                req(input$goNetShifts)
+                req(input$plotName)
+                req(input$cntl)
+                req(input$time1)
+                req(input$time2)
+                
+                library(tidyverse)
+                library(ggthemes)
+                
+                # get working directory to reset at end of function
+                directory <- getwd()
+                
+                # use thermally controlled data if desired
+                dat <- plotData
+                
+                # generate list of rings and empty dataframe to store net shift data
+                ringList <- unique(dat$Ring)
+                dat.rings <- data.frame()
+                time1 <- as.numeric(input$time1)
+                time2 <- as.numeric(input$time2)
+                
+                # locations for each time is determined using which, min, and abs func
+                for (i in ringList){
+                        dat.ring <- filter(dat, Ring == i)
+                        time1.loc <- which.min(abs(dat.ring$Time - time1))
+                        time1.val <- dat.ring$Shift[time1.loc]
+                        time2.loc <- which.min(abs(dat.ring$Time - time2))
+                        time2.val <- dat.ring$Shift[time2.loc]
+                        ring <- i
+                        group <- unique(dat.ring$Group)
+                        target <- unique(dat.ring$Target)
+                        experiment <- unique(dat.ring$Experiment)
+                        channel <- unique(dat.ring$Channel)
+                        tmp <- data.frame(i, group, target, time1.val, time2.val,
+                                          experiment, channel)
+                        dat.rings <- rbind(dat.rings, tmp)
                 }
-        }
+                print("made it")
+                # renames dat.rings columns
+                names(dat.rings) <- c("Ring", "Group", "Target", "Shift.1", 
+                                      "Shift.2", "Experiment", "Channel")
+                
+                # calculate nat shift and create new column in dataframe
+                dat.rings$`Net Shift` <- dat.rings$Shift.1 - dat.rings$Shift.2
+                
+                dat.nothermal <- filter(dat.rings, Target != "thermal")
+                
+                plots <- ggplot(dat.nothermal, 
+                                aes(Target, `Net Shift`, color = Target)) +
+                        geom_boxplot() +
+                        theme_few(base_size = 16) +
+                        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                              legend.position="none") +
+                        ylab(expression(paste("Net Shift (",Delta,"pm)")))
+                
+                
+                netShiftData <<- dat.rings
+                plots
+                
+        })
+        
+        output$downloadIndyData <- downloadHandler(
+                
+                # This function returns a string which tells the client
+                # browser what name to use when saving the file.
+                filename = function() {
+                        paste(input$plotName, "csv", sep = ".")
+                },
+                
+                # This function should write data to a file given to it by
+                # the argument 'file'.
+                content = function(file) {
+                        # Write to a file specified by the 'file' argument
+                        write.csv(plotData, file)
+                }
+        )
+        
+        output$downloadAvgData <- downloadHandler(
+                
+                # This function returns a string which tells the client
+                # browser what name to use when saving the file.
+                filename = function() {
+                        paste(input$plotName, "csv", sep = ".")
+                },
+                
+                # This function should write data to a file given to it by
+                # the argument 'file'.
+                content = function(file) {
+                        # Write to a file specified by the 'file' argument
+                        write.csv(avgPlotData, file)
+                }
+        )
+        
+        output$downloadNetShifts <- downloadHandler(
+                
+                # This function returns a string which tells the client
+                # browser what name to use when saving the file.
+                filename = function() {
+                        paste(input$plotName, "csv", sep = ".")
+                },
+                
+                # This function should write data to a file given to it by
+                # the argument 'file'.
+                content = function(file) {
+                        # Write to a file specified by the 'file' argument
+                        write.csv(netShiftData, file)
+                }
         )
 }
 

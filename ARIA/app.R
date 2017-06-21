@@ -149,11 +149,13 @@ server <- function(input, output) {
                                                  Channel) %>% 
                                         summarise_each(funs(mean, sd), 
                                                        c(Time, Shift))
+                                avgPlotData <<- dat.avg
                         } else {
                                 dat.avg <- df %>%
                                         group_by(Target, `Time Point`) %>% 
                                         summarise_each(funs(mean, sd), 
                                                        c(Time, Shift))
+                                avgPlotData <<- dat.avg
                         }
                         
                         
@@ -190,7 +192,6 @@ server <- function(input, output) {
                 }
                 
                 plotData <<- df
-                avgPlotData <<- dat.avg
                 plots
                 
         })

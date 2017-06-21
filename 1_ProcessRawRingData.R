@@ -114,8 +114,8 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         ringNames <- unique(dat$Ring)
         for(i in ringNames){
                 ringDat <- filter(dat, Ring == i) %>% select(Shift)
-                ringTC <- ringDat - avgControls
-                dat[dat$Ring == i, 4] <- ringTC
+                ringTC <- ringDat$Shift - avgControls
+                dat[dat$Ring == i, 2] <- ringTC
         }
         
         write_csv(dat, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 
@@ -278,6 +278,22 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         setwd(directory)
 }
 
+CheckRingQuality <- function(loc = 'plots', 
+                             varLevel = 500000) {
+        library(tidyverse)
+        
+        dat <- read_csv(paste0(loc,"/", name, "_allRings.csv"))
+        
+        dat.avg <- dat %>% group_by(Ring) %>%
+                summarise_each(funs(var), c(Shift))
+        
+        ringWinners <- filter(dat.avg, Shift < varLevel) %>% select(Ring)
+        ringLosers <- filter(dat.avg, Shift > varLevel) %>% select(Ring)
+        
+        write_csv(ringWinners, paste0(loc, '/', name, "_ringWinners.csv"))
+        write_csv(ringLosers, paste0(loc, '/', name, "_ringLosers.csv"))
+}
+
 AnalyzeData <- function() {
         GetName()
         AggData()
@@ -285,8 +301,8 @@ AnalyzeData <- function() {
         SubtractControl(ch = 2, cntl = "thermal")
         PlotRingData(cntl = "thermal", ch = 1)
         PlotRingData(cntl = "thermal", ch = 2)
-        GetNetShifts(cntl = "thermal", ch = 1, time1 = 52, time2 = 41, step = 1)
-        GetNetShifts(cntl = "thermal", ch = 2, time1 = 52, time2 = 41, step = 1)
+        GetNetShifts(cntl = "thermal", ch = 1, time1 = 51, time2 = 39, step = 1)
+        GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
         PlotNetShifts(cntl = "thermal", ch = "1", step = 1)
         PlotNetShifts(cntl = "thermal", ch = "2", step = 1)
 }

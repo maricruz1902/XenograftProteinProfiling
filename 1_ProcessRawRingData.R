@@ -2,27 +2,24 @@ GetName <- function(){
         # get the filename from the current working directory
         directory <- basename(getwd())
         
-        # directory naming from MRR: "CHIPNAME_gaskGASKAnalyETTYPE_DATE"
-        # extracts and returns GASKETTYPE from directory name
-        name <- unlist(strsplit(directory, split = "_"))
-        name <- name[2]
+        # directory naming from MRR: "CHIPNAME_gaskGASK_DATE"
+        # extracts and returns GASK from directory name
+        name <- unlist(strsplit(directory, split = "_"))[2]
         
         # define name as global variable for use in other functions
         name <<- gsub('gask','',name) # removes "gask" from name
 }
 
-AggData <- function(loc = 'plots') {
+AggData <- function(loc = 'plots', filename = 'groupNames_XPP.csv') {
         library(tidyverse)
         
         # get working directory to reset at end of function
         directory <- getwd()
         
-        # change this file name to use alternative ring or group labels
-        filename <- "groupNames_XPP.csv"
-        
         # get information of chip layout from github repository
-        if (!file.exists("groupNames_XPP.csv")){
-                url <- "https://raw.githubusercontent.com/JamesHWade/XenograftProteinProfiling/master/groupNames_XPP.csv"
+        if (!file.exists(filename)){
+                git <- "https://raw.githubusercontent.com/JamesHWade/XenograftProteinProfiling/master/"
+                url <- paste0(git, filename)
                 filename <- basename(url)
                 download.file(url, filename)
         }
@@ -43,18 +40,14 @@ AggData <- function(loc = 'plots') {
         for (i in rings) {
                 dat <- read_csv(i, col_names = FALSE)
                 ringNum <- as.numeric(strsplit(i, "\\.")[[1]][1])
-                recipe.col <- which(recipe$Ring == ringNum)
-                groupNum <- recipe$Group[recipe.col]
-                groupName <- as.character(recipe$Target[[recipe.col]])
-                channel <- recipe$Channel[[recipe.col]]
-                tmp <- dat[,c(1,2)]
-                names(tmp) <- c("Time", "Shift")
+                recipeCol <- which(recipe$Ring == ringNum)
+                tmp <- dat[,c(1,2)] # time and shift from raw data
                 tmp$ring <- ringNum
-                tmp$group <- groupNum
-                tmp$groupName <- groupName
-                tmp$channel <- channel
+                tmp$group <- recipe$Group[recipeCol]
+                tmp$groupName <- as.character(recipe$Target[[recipeCol]])
+                tmp$channel <- recipe$Channel[[recipeCol]]
                 tmp$run <- name
-                tmp$time_point <- seq(1:nrow(dat))
+                tmp$timePoint <- seq(1:nrow(dat))
                 df <- rbind(df, tmp)
         }
         
@@ -81,9 +74,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         
         # get ring data and filter by channel
         dat <- read_csv(paste0(loc, "/", name, "_", "allRings.csv"))
-        if (ch != "U"){
-                dat <- filter(dat, Channel == ch)
-        }
+        if (ch != "U"){dat <- filter(dat, Channel == ch)}
         dat <- filter(dat, Target != "Ignore")
         
         # get thermal control averages
@@ -103,7 +94,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         
         # averages thermal controls
         cols <- ncol(df.controls)
-        if (length(unique(controls$Ring)) != 1) {
+        if (cols > 2) {
                 df.controls$avgControls <- rowMeans(df.controls[,c(2:cols)])
         } else {
                 df.controls$avgControls <- df.controls[,c(2:cols)]
@@ -114,15 +105,15 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         ringNames <- unique(dat$Ring)
         for(i in ringNames){
                 ringDat <- filter(dat, Ring == i) %>% select(Shift)
-                ringTC <- ringDat$Shift - avgControls
-                dat[dat$Ring == i, 2] <- ringTC
+                ringTC <- ringDat - avgControls
+                dat[dat$Ring == i, "Shift"] <- ringTC
         }
         
         write_csv(dat, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 
                              ".csv", sep = ''))   
 }
 
-PlotRingData <- function(cntl, ch, loc = 'plots'){
+PlotRingData <- function(cntl, ch, loc = 'plots', splitPlot = FALSE){
         # loads relevant libraries and plot theme
         library(tidyverse)
         library(ggthemes)
@@ -136,20 +127,18 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
                                       "_ch", ch,".csv", sep=''))
         } else if (cntl == "raw") {
                 dat <- read_csv(paste(loc, "/", name, "_allRings.csv", sep=''))
+                if (ch != "U") {filter(dat, Channel == ch)}
         }
+        
+        plot_theme <- theme_few(base_size = 16)
         
         #configure plot and legend
         plots <- ggplot(dat, 
-                        aes(Time, Shift, colour = Target, group = Ring)) + 
+                        aes(Time, Shift, color = Target, group = Ring)) + 
                 labs(x = "Time (min)", 
                      y = expression(paste("Relative Shift (",Delta,"pm)")),
                      color = "Target") +
-                theme_few(base_size = 16)
-        
-        if (cntl == "raw"){
-                plots <- plots + geom_line() + facet_grid(.~ Channel)
-        } else { plots <- plots + geom_line() }
-        
+                plot_theme + geom_line()
         
         # alternative plots with averaged clusters
         
@@ -160,12 +149,16 @@ PlotRingData <- function(cntl, ch, loc = 'plots'){
                 geom_line() +
                 labs(x = "Time (min)", 
                      y = expression(paste("Relative Shift (",Delta,"pm)"))) +
-                theme_few(base_size = 16)
+                plot_theme
         
         plot3 <- plot2 + 
                 geom_ribbon(aes(ymin = Shift_mean - Shift_sd,
                                 ymax = Shift_mean + Shift_sd, linetype = NA),
                             fill = "slategrey", alpha = 1/8)
+        
+        if (splitPlot){
+                plots <- plots + facet_grid(. ~ Channel)
+        }
         
         #save plot, uncomment to save
         filename <- paste0(name, "_", cntl, "Control", "_ch", ch)
@@ -190,9 +183,9 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         # use thermally controlled data if desired
         if (cntl != "raw"){
                 dat <- read_csv(paste0(loc, "/", name, "_", cntl, "Control", 
-                                      "_ch", ch, ".csv"))
+                                       "_ch", ch, ".csv"))
         } else {
-                dat <- read_csv(paste(loc, "/", name, "_", "allRings.csv"))
+                dat <- read_csv(paste0(loc, "/", name, "_", "allRings.csv"))
         }
         
         # generate list of rings and empty dataframe to store net shift data
@@ -224,8 +217,7 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         dat.rings$`Net Shift` <- dat.rings$Shift.1 - dat.rings$Shift.2
         
         # save net shift data
-        setwd(loc)
-        write_csv(dat.rings, paste0(name, "_netShifts_ch", ch, "step_", 
+        write_csv(dat.rings, paste0(loc, "/", name, "_netShifts_ch", ch, "step_", 
                                     step, ".csv"))
         setwd(directory)
 }
@@ -299,12 +291,15 @@ AnalyzeData <- function() {
         AggData()
         SubtractControl(ch = 1, cntl = "thermal")
         SubtractControl(ch = 2, cntl = "thermal")
-        PlotRingData(cntl = "thermal", ch = 1)
-        PlotRingData(cntl = "thermal", ch = 2)
+        #SubtractControl(ch = "U", cntl = "thermal")
+        #PlotRingData(cntl = "raw", ch = "U", splitPlot = FALSE)
+        #PlotRingData(cntl = "thermal", ch = "U", splitPlot = TRUE)
+        PlotRingData(cntl = "thermal", ch = 1, splitPlot = FALSE)
+        PlotRingData(cntl = "thermal", ch = 2, splitPlot = FALSE)
         GetNetShifts(cntl = "thermal", ch = 1, time1 = 51, time2 = 39, step = 1)
         GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
-        PlotNetShifts(cntl = "thermal", ch = "1", step = 1)
-        PlotNetShifts(cntl = "thermal", ch = "2", step = 1)
+        PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
+        PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
 }
 
 AnalyzeAllData <- function() {

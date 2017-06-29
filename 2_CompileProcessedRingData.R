@@ -82,3 +82,10 @@ CleanData <- function(filename = 'runs.csv'){
         # saves data
         write_csv(df, "compiledLabeled.csv")
 }
+
+
+CompileAndProcess <- function(){
+        GetName()
+        CompileData()
+        CleanData()
+}

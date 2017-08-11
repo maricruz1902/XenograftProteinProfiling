@@ -242,7 +242,7 @@ CheckRingQuality <- function(loc = 'plots', time1, time2, varLevel = 100) {
         dat <- subset(dat, Time > time1 & Time < time2)
         
         dat.avg <- dat %>% group_by(Ring) %>%
-                summarise_at(funs(var), vars(Shift))
+                summarise_at(vars(Shift), funs(var))
         
         ringWinners <- filter(dat.avg, Shift < varLevel) %>% select(Ring)
         ringLosers <- filter(dat.avg, Shift > varLevel) %>% select(Ring)
@@ -267,6 +267,7 @@ AnalyzeData <- function() {
         GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
+        CheckRingQuality(time1 = 10, time2 = 20)
 }
 
 AnalyzeAllData <- function() {

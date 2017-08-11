@@ -10,7 +10,7 @@ GetName <- function(){
         name <<- gsub('gask','',name) # removes "gask" from name
 }
 
-AggData <- function(loc = 'plots', filename = 'groupNames_XPP.csv') {
+AggData <- function(loc = 'plots', filename = 'groupNames.csv') {
         library(tidyverse)
         
         # get working directory to reset at end of function
@@ -138,7 +138,8 @@ PlotRingData <- function(cntl, ch, loc = 'plots', splitPlot = FALSE){
                 labs(x = "Time (min)", 
                      y = expression(paste("Relative Shift (",Delta,"pm)")),
                      color = "Target") +
-                plot_theme + geom_line() + ggtitle(name)
+                plot_theme + geom_line() +
+                geom_vline(xintercept = c(5, 22,5, 40, 57, 74, 92, 110))
         
         # alternative plots with averaged clusters
         
@@ -154,7 +155,7 @@ PlotRingData <- function(cntl, ch, loc = 'plots', splitPlot = FALSE){
         plot3 <- plot2 + 
                 geom_ribbon(aes(ymin = Shift_mean - Shift_sd,
                                 ymax = Shift_mean + Shift_sd, linetype = NA),
-                            fill = "slategrey", alpha = 1/8) + ggtitle(name)
+                            fill = "slategrey", alpha = 1/8)
         
         if (splitPlot){
                 plots <- plots + facet_grid(. ~ Channel)
@@ -165,11 +166,11 @@ PlotRingData <- function(cntl, ch, loc = 'plots', splitPlot = FALSE){
         filename2 <- paste0(name, "_", cntl, "Control", "_ch", ch, "_avg")
         setwd(loc)
         ggsave(plots, file = paste0(filename, ".png"), width = 10, height = 6)
-        ggsave(plots, file = paste0(filename, ".pdf"), width = 10, height = 6)
+        #ggsave(plots, file = paste0(filename, ".pdf"), width = 10, height = 6)
         ggsave(plot2, file = paste0(filename2, ".png"), width = 10, height = 6)
-        ggsave(plot2, file = paste0(filename2, ".pdf"), width = 10, height = 6)
+        #ggsave(plot2, file = paste0(filename2, ".pdf"), width = 10, height = 6)
         ggsave(plot3, file = paste0(filename2, "_2.png"), width = 10, height = 6)
-        ggsave(plot3, file = paste0(filename2, "_2.pdf"), width = 10, height = 6)
+        #ggsave(plot3, file = paste0(filename2, "_2.pdf"), width = 10, height = 6)
         setwd(directory)
 }
 
@@ -216,6 +217,9 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         # calculate nat shift and create new column in dataframe
         dat.rings$`Net Shift` <- dat.rings$Shift.1 - dat.rings$Shift.2
         
+        is.num <- sapply(dat.rings, is.numeric)
+        dat.rings[is.num] <- lapply(dat.rings[is.num], round, 3)
+        
         # save net shift data
         write_csv(dat.rings, paste0(loc, "/", name, "_netShifts_ch", ch, "step_", 
                                     step, ".csv"))
@@ -247,7 +251,8 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
                 theme_few(base_size = 16) +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1),
                       legend.position="none") +
-                ylab(expression(paste("Net Shift (",Delta,"pm)")))
+                ylab(expression(paste("Net Shift (",Delta,"pm)"))) +
+                ggtitle(name)
         
         allRings <- ggplot(dat.nothermal, 
                            aes(factor(Ring), `Net Shift`, fill = Target)) +
@@ -262,11 +267,11 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         filename2 <- paste0("IndyRings_", filename)
         setwd(loc)
         ggsave(plots, file = paste0(filename, ".png"), width = 10, height = 6)
-        ggsave(plots, file = paste0(filename, ".pdf"), width = 10, height = 6)
+        #ggsave(plots, file = paste0(filename, ".pdf"), width = 10, height = 6)
         ggsave(allRings, file = paste0(filename2, ".png"), 
                width = 12, height = 6)
-        ggsave(allRings, file = paste0(filename2, ".pdf"), 
-               width = 12, height = 6)
+        #ggsave(allRings, file = paste0(filename2, ".pdf"), 
+        #       width = 12, height = 6)
         setwd(directory)
 }
 
@@ -277,17 +282,46 @@ CombineNetShifts <- function(loc = 'plots', ch){
         setwd(loc)
         
         netList <- grep('net', list.files(pattern = '.csv'), value = TRUE)
+        removeFiles <- grep("Combined", netList, value = TRUE)
+        netList <- netList[!netList %in% removeFiles]
         
         if ( ch %in% c(1, 2) ) { 
                 netList <- grep(paste0("ch", ch), netList, value = TRUE)
         }
         
+        
         netShifts <- lapply(netList, read_csv)
         
         netComb <- bind_rows(netShifts)
+        netComb <- filter(netComb, !grepl("thermal|offTarget", Target))
         
-        write_csv(x = netComb, 
-                  path = paste0(name, "_netShiftsCombined_ch", ch, ".csv"))
+        cycles <- unique(netComb$Step)
+        
+        adjShift <- filter(netComb, Step == cycles[1]) %>% select(`Net Shift`)
+        
+        for ( i in 1:(length(cycles) - 1)){
+                oldShift <- filter(netComb, Step == cycles[i + 1]) %>% 
+                        select(`Net Shift`)
+                print(i)
+                x <- i
+                newShift <- oldShift
+                while(x > 0){
+                        addShift <- filter(netComb, Step == cycles[x]) %>% 
+                                select(`Net Shift`)
+                        newShift <- newShift + addShift
+                        x <- x - 1
+                        print('while')
+                }
+                adjShift <- rbind(adjShift, newShift)
+                print('for')
+        }
+        
+        netComb <- cbind(netComb, adjShift)
+        names(netComb)[10] <- "newShift"
+        
+        filename <- paste0(name, "_netShiftsCombined_ch", ch, ".csv")
+        
+        write_csv(netComb, path = filename)
         
         setwd(directory)
 }
@@ -298,10 +332,58 @@ PlotCombineNetShifts <- function(loc = 'plots', ch){
         
         dat <- read_csv(paste0(loc, "/", name, "_netShiftsCombined_ch", 
                                ch, ".csv"))
+        
         dat$Step <- factor(dat$Step)
         
-        plot <- ggplot(dat, aes(x = Target, y = `Net Shift`, color = Step)) +
-                geom_boxplot()
+        dat.melt <- melt(dat, id = c("Step", "Target", "Ring", "Channel"), measure = c("newShift", "Net Shift"))
+        
+        ggplot(dat.melt, aes(x = Step, y = value, color = variable)) + geom_boxplot() + facet_wrap(Channel~Target) + theme_few()
+        
+        plot_theme <- theme_few(base_size = 16)
+        
+        plot <- ggplot(dat, aes(x = Step, y = newShift, 
+                                color = Target, group = Ring)) +
+                geom_line()+
+                plot_theme + ggtitle(name) + facet_wrap(~Target)
+        
+        ggsave(plot = plot, 
+               filename = paste0(loc, "/", name, "_netShiftsCombined_ch", ch,  
+                                 ".png"),
+               width = 8, height = 6)
+}
+
+Fit <- function(loc = 'plots', ch){
+        dat <- read_csv(paste0(paste0(loc, "/", name, "_netShiftsCombined_ch", 
+                                      ch, ".csv")))
+        
+        dat$Replicate <- as.factor((dat$Ring - 1) %% 4 + 1)
+        
+        dat.fit <- select(dat, c(Target, Experiment, Step, newShift, Replicate, Ring))
+        
+        dat.fit <- filter(dat.fit, Target != "Off target")
+        
+        fit <- list()
+        targetList <- unique(dat.fit$Target)
+        
+        ggplot(dat.tar, aes(x = Step, y = newShift, group = Ring)) + geom_line() +
+                geom_smooth(formula = y ~ x / (1 + x))
+        
+        for(i in 1:length(targetList)) {
+                tar <- targetList[i]
+                print(tar)
+                dat.tar <- filter(dat.fit, Target == tar)
+                y <- dat.tar$newShift
+                x <- dat.tar$Step
+                #fit[[i]] <- nls(y ~ SSlogis(x, Asym, xmid, scal))
+                fit[[i]] <- nls(formula = y ~ A.2 + (A.1-A.2)/(1 + (x/x.0)^p),
+                                start = list(A.2 =max(y),
+                                             A.1 = min(y),
+                                             x.0 = mean(y),
+                                             p = 1))
+        }
+        
+        capture.output(fit, file = paste0(loc, "_dataFit.txt"))
+        
 }
 
 CheckRingQuality <- function(loc = 'plots', 
@@ -320,21 +402,26 @@ CheckRingQuality <- function(loc = 'plots',
         write_csv(ringLosers, paste0(loc, '/', name, "_ringLosers.csv"))
 }
 
-AnalyzeData <- function() {
+AnalyzeData <- function(loc, ch, cntl, filename = 'groupNames.csv') {
         GetName()
-        AggData(loc = "groupMeeting", filename = "groupNames_allClusters.csv")
-        SubtractControl(loc = "groupMeeting", ch = 1, cntl = "thermal")
-        #SubtractControl(ch = 2, cntl = "thermal")
-        #SubtractControl(ch = "U", cntl = "thermal")
-        #PlotRingData(cntl = "raw", ch = "U", splitPlot = FALSE)
-        #PlotRingData(cntl = "thermal", ch = "U", splitPlot = TRUE)
-        PlotRingData(loc = "groupMeeting", cntl = "thermal", ch = 1, splitPlot = FALSE)
-        PlotRingData(loc = "groupMeeting", cntl = "raw", ch = 1, splitPlot = FALSE)
-        #PlotRingData(cntl = "thermal", ch = 2, splitPlot = FALSE)
-        #GetNetShifts(cntl = "thermal", ch = 1, time1 = 51, time2 = 39, step = 1)
-        #GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
-        #PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
-        #PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
+        AggData(loc = loc, filename = filename)
+        SubtractControl(ch = ch, cntl = cntl)
+        PlotRingData(cntl = cntl, ch = ch, splitPlot = TRUE)
+        GetNetShifts(cntl = cntl, ch = ch, 
+                     time1 = 22.5, time2 = 5, step = 20)
+        GetNetShifts(cntl = cntl, ch = ch, 
+                     time1 = 40, time2 = 22.5, step = 25)
+        GetNetShifts(cntl = cntl, ch = ch, 
+                     time1 = 57, time2 = 40, step = 30)
+        GetNetShifts(cntl = cntl, ch = ch, 
+                     time1 = 74, time2 = 57, step = 35)
+        GetNetShifts(cntl = cntl, ch = ch, 
+                     time1 = 92, time2 = 74, step = 40)
+        GetNetShifts(cntl = cntl, ch = ch, 
+                     time1 = 110, time2 = 92, step = 45)
+        CombineNetShifts(ch = ch)
+        PlotCombineNetShifts(ch = ch)
+        Fit(loc = loc, ch = ch)
 }
 
 AnalyzeAllData <- function() {

@@ -1,6 +1,8 @@
 setwd("D:/Box Sync/Data/")
 library(tidyverse)
 library(ggthemes)
+library(GGally)
+library(Hmisc)
 
 dat <- read_csv("compiledLabeled.csv")
 dat <- select(dat, -Shift.1, -Shift.2, - Group)
@@ -24,6 +26,20 @@ plot <- ggplot(dat.dcast,
 
 plot + geom_point(size = 6) + theme_few()
 
+dat.scale <- scale(dat.dcast[,5:17])
+dat.scaled <- cbind(dat.dcast[,1:4], dat.scale)
+colnames(dat.scaled)[3] <- "CellLine"
+colnames(dat.scaled)[2] <- "TimePoint"
+dat.scaled$TimePoint <- factor(dat.scaled$TimePoint)
+colnames(dat.scaled)[8] <- "pGSK3B Ser9"
 
+pairs(dat.dcast[5:17], col = factor(dat.dcast$`Cell Line`))
+pairs(dat.scaled[5:17], col = factor(dat.scaled$`Cell Line`))
+
+ggpairs(dat.scaled, aes(color = TimePoint))
+
+
+dat.dcast$Txt <- dat.dcast$Treatment
+dat.dcast$Treatment <- NULL
 
 plot(dat.dcast$`hydroxy-HIF Pro564` ~ dat.dcast$`pAkt Ser473`)

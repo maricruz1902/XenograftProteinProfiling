@@ -36,8 +36,7 @@ AggData <- function(loc = 'plots', filename = 'groupNames_XPP.csv') {
         rings <- rings[!rings %in% removeFiles]
         
         # add data to data frame corresponding for each ring in rings
-        df <- data.frame()
-        for (i in rings) {
+        df <- lapply(rings, function(i){
                 dat <- read_csv(i, col_names = FALSE)
                 ringNum <- as.numeric(strsplit(i, "\\.")[[1]][1])
                 recipeCol <- which(recipe$Ring == ringNum)
@@ -48,29 +47,25 @@ AggData <- function(loc = 'plots', filename = 'groupNames_XPP.csv') {
                 tmp$channel <- recipe$Channel[[recipeCol]]
                 tmp$run <- name
                 tmp$timePoint <- seq(1:nrow(dat))
-                df <- rbind(df, tmp)
-        }
+                tmp
+        })
+        
+        df <- bind_rows(df)
         
         # renames columns in df
         names(df) <- c("Time", "Shift", "Ring", "Group", "Target", "Channel",
                        "Experiment", "Time Point")
         
-        # creates "plots" directory if one does not exist
-        if (!file.exists(loc)){dir.create(loc)}
+        # creates "plots" directory
+        dir.create(loc, showWarnings = FALSE)
         
         # saves aggregated data with name_allRings.csv
         write_csv(df, paste(loc, '/', name, "_allRings.csv", sep=""))
-        
-        # returns working directory to top level
-        setwd(directory)
 }
 
 SubtractControl <- function(loc = 'plots', ch, cntl){
         #load relevant libraries
         library(tidyverse)
-        
-        # get working directory to reset at end of function
-        directory = getwd()
         
         # get ring data and filter by channel
         dat <- read_csv(paste0(loc, "/", name, "_", "allRings.csv"))
@@ -78,36 +73,16 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         dat <- filter(dat, Target != "Ignore")
         
         # get thermal control averages
-        controls <- filter(dat, Target == cntl)
-        ringList <- unique(controls$Ring)
+        controls <- filter(dat, Target == cntl) %>% group_by(`Time Point`) %>%
+                summarise_at("Shift", mean) %>% select(Shift) %>% unlist()
+        dat$Cntl <- rep(controls, length(unique(dat$Ring)))
         
-        # gets times from first thermal control
-        times <- filter(controls, Ring == ringList[1]) %>% select(Time)
-        df.controls <- data.frame(times)
+        # subtracts thermal controls from each ring
+        dat.cntl <- mutate(dat, Shift = Shift - Cntl)
         
-        # create dataframe with all controls
-        for (i in ringList){
-                ringShift <- filter(controls, Ring == i) %>% select(Shift)
-                names(ringShift) <- paste('Ring', i, sep='')
-                df.controls <- cbind(df.controls, ringShift)
-        }
-        
-        # averages thermal controls
-        cols <- ncol(df.controls)
-        if (cols > 2) {
-                df.controls$avgControls <- rowMeans(df.controls[,c(2:cols)])
-        } else {
-                df.controls$avgControls <- df.controls[,c(2:cols)]
-        }
-        avgControls <- as.vector(df.controls$avgControls)
-        
-        #subtracts thermal controls from each ring
-        ringNames <- unique(dat$Ring)
-        for(i in ringNames){
-                ringDat <- filter(dat, Ring == i) %>% select(Shift)
-                ringTC <- ringDat - avgControls
-                dat[dat$Ring == i, "Shift"] <- ringTC
-        }
+        # remove control column and control rings
+        dat.cntl <- filter(dat, Target != cntl)
+        dat.cntl$Cntl <- NULL
         
         write_csv(dat, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 
                              ".csv", sep = ''))   
@@ -117,9 +92,7 @@ PlotRingData <- function(cntl, ch, loc = 'plots', splitPlot = FALSE){
         # loads relevant libraries and plot theme
         library(tidyverse)
         library(ggthemes)
-        
-        # get working directory to reset at end of function
-        directory <- getwd()
+        theme_set(theme_few(base_size = 16))
         
         # use thermally controlled data if desired
         if (cntl != "raw"){
@@ -127,58 +100,58 @@ PlotRingData <- function(cntl, ch, loc = 'plots', splitPlot = FALSE){
                                       "_ch", ch,".csv", sep=''))
         } else if (cntl == "raw") {
                 dat <- read_csv(paste(loc, "/", name, "_allRings.csv", sep=''))
-                if (ch != "U") {filter(dat, Channel == ch)}
+                if (ch != "U") {dat <- filter(dat, Channel == ch)}
         }
         
-        plot_theme <- theme_few(base_size = 16)
-        
-        #configure plot and legend
-        plots <- ggplot(dat, 
-                        aes(Time, Shift, color = Target, group = Ring)) + 
+        # configure plot and legend
+        plots <- ggplot(dat, aes(x = Time, y = Shift,
+                                 color = Target, group = Ring)) + 
                 labs(x = "Time (min)", 
                      y = expression(paste("Relative Shift (",Delta,"pm)")),
                      color = "Target") +
-                plot_theme + geom_line() + ggtitle(name)
+                geom_line() + 
+                ggtitle(paste(name, "Ch:", ch, "Control:", cntl, sep = " "))
         
         # alternative plots with averaged clusters
         
         dat.2 <- dat %>% group_by(Target, `Time Point`) %>% 
-                summarise_each(funs(mean, sd), c(Time, Shift))
+                summarise_at(vars(Time, Shift), funs(mean, sd))
         
-        plot2 <- ggplot(dat.2, aes(Time_mean, Shift_mean, color = Target)) +
+        plot2 <- ggplot(dat.2, aes(x = Time_mean, y = Shift_mean, 
+                                   color = Target)) +
                 geom_line() +
                 labs(x = "Time (min)", 
                      y = expression(paste("Relative Shift (",Delta,"pm)"))) +
-                plot_theme + ggtitle(name)
+                ggtitle(paste(name, "Ch:", ch, "Control:", cntl, sep = " "))
         
         plot3 <- plot2 + 
                 geom_ribbon(aes(ymin = Shift_mean - Shift_sd,
-                                ymax = Shift_mean + Shift_sd, linetype = NA),
-                            fill = "slategrey", alpha = 1/8) + ggtitle(name)
+                                ymax = Shift_mean + Shift_sd, 
+                                linetype = NA),
+                            fill = "slategrey", alpha = 1/8)
         
         if (splitPlot){
                 plots <- plots + facet_grid(. ~ Channel)
         }
         
-        #save plot, uncomment to save
-        filename <- paste0(name, "_", cntl, "Control", "_ch", ch)
-        filename2 <- paste0(name, "_", cntl, "Control", "_ch", ch, "_avg")
-        setwd(loc)
-        ggsave(plots, file = paste0(filename, ".png"), width = 10, height = 6)
-        ggsave(plots, file = paste0(filename, ".pdf"), width = 10, height = 6)
-        ggsave(plot2, file = paste0(filename2, ".png"), width = 10, height = 6)
-        ggsave(plot2, file = paste0(filename2, ".pdf"), width = 10, height = 6)
-        ggsave(plot3, file = paste0(filename2, "_2.png"), width = 10, height = 6)
-        ggsave(plot3, file = paste0(filename2, "_2.pdf"), width = 10, height = 6)
-        setwd(directory)
+        # save plots
+        ggsave(plot = plots, 
+               file = paste0(loc, "/", name, "_", cntl, 
+                             "Control_ch", ch, ".png"),
+               width = 10, height = 6)
+        ggsave(plot = plot2, 
+               file = paste0(loc, "/", name, "_", cntl,
+                             "Control", "_ch", ch, "_avg.png"),
+               width = 10, height = 6)
+        ggsave(plot = plot3, 
+               file = paste0(loc, "/", name, "_", cntl,
+                             "Control", "_ch", ch, "_avg.png"),
+               width = 10, height = 6)
 }
 
 GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         # load relevant libraries
         library(tidyverse)
-        
-        # get working directory to reset at end of function
-        directory <- getwd()
         
         # use thermally controlled data if desired
         if (cntl != "raw"){
@@ -190,10 +163,9 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         
         # generate list of rings and empty dataframe to store net shift data
         ringList <- unique(dat$Ring)
-        dat.rings <- data.frame()
-        
+
         # locations for each time is determined using which, min, and abs func
-        for (i in ringList){
+        dat.rings <- lapply(ringList, function(i){
                 dat.ring <- filter(dat, Ring == i)
                 time1.loc <- which.min(abs(dat.ring$Time - time1))
                 time1.val <- dat.ring$Shift[time1.loc]
@@ -204,114 +176,73 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
                 target <- unique(dat.ring$Target)
                 experiment <- unique(dat.ring$Experiment)
                 channel <- unique(dat.ring$Channel)
-                tmp <- data.frame(i, group, target, time1.val, time2.val,
-                                  experiment, channel, step)
-                dat.rings <- rbind(dat.rings, tmp)
-        }
+                data.frame(i, group, target, time1.val,
+                           time2.val, experiment, channel, step)
+        })
         
         # renames dat.rings columns
+        dat.rings <- bind_rows(dat.rings)
         names(dat.rings) <- c("Ring", "Group", "Target", "Shift.1", "Shift.2", 
                               "Experiment", "Channel", "Step")
         
         # calculate nat shift and create new column in dataframe
-        dat.rings$`Net Shift` <- dat.rings$Shift.1 - dat.rings$Shift.2
+        dat.rings <- dat.rings %>% 
+                mutate(`Net Shift` = Shift.1 - Shift.2)
         
         # save net shift data
-        write_csv(dat.rings, paste0(loc, "/", name, "_netShifts_ch", ch, "step_", 
-                                    step, ".csv"))
-        setwd(directory)
+        write_csv(dat.rings, paste0(loc, "/", name, "_netShifts_", cntl, "cntl_",
+                                    "ch", ch, "_step", step, ".csv"))
 }
 
 PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         # load relevant libraries and plot theme
         library(tidyverse)
         library(ggthemes)
-        
-        # get working directory to reset at end of function
-        directory <- getwd()
-        
-        # get net shift data
-        if (cntl != "raw"){
-                dat <- read_csv(paste0(loc, "/", name, "_netShifts_ch", ch, 
-                                       "step_", step, ".csv"))
-        } else {
-                dat <- read_csv(paste0(loc,"/", name, "_netShifts_chU.csv"))
-        }
+        theme_set(theme_few(base_size = 16))
+
+        dat <- read_csv(paste0(loc, "/", name, "_netShifts_", cntl, "cntl_",
+                                       "ch", ch, "_step", step, ".csv"))
         
         # configure plot and legend
         dat.nothermal <- filter(dat, Target != "thermal")
         
         plots <- ggplot(dat.nothermal, 
-                        aes(Target, `Net Shift`, color = Target)) +
+                        aes(x = Target, y = `Net Shift`, fill = Target)) +
                 geom_boxplot() +
-                theme_few(base_size = 16) +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1),
                       legend.position="none") +
-                ylab(expression(paste("Net Shift (",Delta,"pm)")))
+                ylab(expression(paste("Net Shift (",Delta,"pm)"))) +
+                ggtitle(paste0(name, " Ch: ", ch, " Control: ", cntl))
         
         allRings <- ggplot(dat.nothermal, 
-                           aes(factor(Ring), `Net Shift`, fill = Target)) +
+                           aes(x = factor(Ring), y= `Net Shift`, 
+                               fill = Target)) +
                 geom_bar(stat = "identity") +
-                theme_few(base_size = 16) +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+                theme(axis.text.x = 
+                              element_text(angle = 90, hjust = 1, vjust = 0.5)) +
                 ylab(expression(paste("Net Shift (",Delta,"pm)"))) + 
-                xlab("Ring")
+                xlab("Ring") +
+                ggtitle(paste0(name, " Ch: ", ch, " Control: ", cntl))
         
         # save plot, uncomment to save
-        filename <- paste0(name, "_NetShift_ch", ch, "_step", step)
-        filename2 <- paste0("IndyRings_", filename)
-        setwd(loc)
-        ggsave(plots, file = paste0(filename, ".png"), width = 10, height = 6)
-        ggsave(plots, file = paste0(filename, ".pdf"), width = 10, height = 6)
-        ggsave(allRings, file = paste0(filename2, ".png"), 
+        ggsave(plot = plots, 
+               file = paste0(loc, "/",  name, "_NetShift_", cntl, "cntl_",
+                             "ch", ch, "_step", step, ".png"), 
+               width = 10, height = 6)
+        ggsave(plot = allRings, 
+               file = paste0(loc, "/", name, "_IndyRings","_NetShift_", cntl, 
+                             "cntl_", "ch", ch, "_step", step, ".png"), 
                width = 12, height = 6)
-        ggsave(allRings, file = paste0(filename2, ".pdf"), 
-               width = 12, height = 6)
-        setwd(directory)
 }
 
-CombineNetShifts <- function(loc = 'plots', ch){
-        library(tidyverse)
-        
-        directory <- getwd()
-        setwd(loc)
-        
-        netList <- grep('net', list.files(pattern = '.csv'), value = TRUE)
-        
-        if ( ch %in% c(1, 2) ) { 
-                netList <- grep(paste0("ch", ch), netList, value = TRUE)
-        }
-        
-        netShifts <- lapply(netList, read_csv)
-        
-        netComb <- bind_rows(netShifts)
-        
-        write_csv(x = netComb, 
-                  path = paste0(name, "_netShiftsCombined_ch", ch, ".csv"))
-        
-        setwd(directory)
-}
-
-PlotCombineNetShifts <- function(loc = 'plots', ch){
-        library(tidyverse)
-        library(ggthemes)
-        
-        dat <- read_csv(paste0(loc, "/", name, "_netShiftsCombined_ch", 
-                               ch, ".csv"))
-        dat$Step <- factor(dat$Step)
-        
-        plot <- ggplot(dat, aes(x = Target, y = `Net Shift`, color = Step)) +
-                geom_boxplot()
-}
-
-CheckRingQuality <- function(loc = 'plots', 
-                             varLevel = 500000) {
+CheckRingQuality <- function(loc = 'plots', time1, time2, varLevel = 100) {
         library(tidyverse)
         
         dat <- read_csv(paste0(loc,"/", name, "_allRings.csv"))
+        dat <- subset(dat, Time > time1 & Time < time2)
         
         dat.avg <- dat %>% group_by(Ring) %>%
-                summarise_each(funs(var), c(Shift))
+                summarise_at(funs(var), vars(Shift))
         
         ringWinners <- filter(dat.avg, Shift < varLevel) %>% select(Ring)
         ringLosers <- filter(dat.avg, Shift > varLevel) %>% select(Ring)
@@ -322,27 +253,28 @@ CheckRingQuality <- function(loc = 'plots',
 
 AnalyzeData <- function() {
         GetName()
-        AggData(loc = "groupMeeting", filename = "groupNames_allClusters.csv")
-        SubtractControl(loc = "groupMeeting", ch = 1, cntl = "thermal")
-        #SubtractControl(ch = 2, cntl = "thermal")
-        #SubtractControl(ch = "U", cntl = "thermal")
-        #PlotRingData(cntl = "raw", ch = "U", splitPlot = FALSE)
-        #PlotRingData(cntl = "thermal", ch = "U", splitPlot = TRUE)
-        PlotRingData(loc = "groupMeeting", cntl = "thermal", ch = 1, splitPlot = FALSE)
-        PlotRingData(loc = "groupMeeting", cntl = "raw", ch = 1, splitPlot = FALSE)
-        #PlotRingData(cntl = "thermal", ch = 2, splitPlot = FALSE)
-        #GetNetShifts(cntl = "thermal", ch = 1, time1 = 51, time2 = 39, step = 1)
-        #GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
-        #PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
-        #PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
+        AggData(filename = "groupNames_XPP.csv")
+        SubtractControl(ch = 1, cntl = "thermal")
+        SubtractControl(ch = 2, cntl = "thermal")
+        SubtractControl(ch = "U", cntl = "thermal")
+        PlotRingData(cntl = "raw", ch = "U", splitPlot = TRUE)
+        PlotRingData(cntl = "thermal", ch = "U", splitPlot = TRUE)
+        PlotRingData(cntl = "thermal", ch = 1, splitPlot = FALSE)
+        PlotRingData(cntl = "raw", ch = 1, splitPlot = FALSE)
+        PlotRingData(cntl = "thermal", ch = 2, splitPlot = FALSE)
+        PlotRingData(cntl = "raw", ch = 2, splitPlot = FALSE)
+        GetNetShifts(cntl = "thermal", ch = 1, time1 = 51, time2 = 39, step = 1)
+        GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
+        PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
+        PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
 }
 
 AnalyzeAllData <- function() {
         foldersList <- list.dirs(recursive = FALSE)
-        for (i in foldersList){
+        lapply(foldersList, function(i){
                 directory <- getwd()
                 setwd(i)
                 AnalyzeData()
                 setwd(directory)
-        }
+        })
 }

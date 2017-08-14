@@ -1,3 +1,4 @@
+setwd("~/../Downloads/20170806 - Calibration Test/")
 GetName <- function(){
         # get the filename from the current working directory
         directory <- basename(getwd())
@@ -407,8 +408,8 @@ AnalyzeData <- function(loc = "plots", ch, cntl = "thermal", filename = 'groupNa
         AggData()
         SubtractControl(ch = 1, cntl = cntl)
         SubtractControl(ch = 2, cntl = cntl)
-        PlotRingData(cntl = cntl, ch = 1, splitPlot = TRUE)
-        PlotRingData(cntl = cntl, ch = 2, splitPlot = TRUE)
+        # PlotRingData(cntl = cntl, ch = 1, splitPlot = TRUE)
+        # PlotRingData(cntl = cntl, ch = 2, splitPlot = TRUE)
         GetNetShifts(cntl = cntl, ch = 1, target = "MCP-1",
                      time1 = 52, time2 = 41, step = ch1_MCP1)
         # GetNetShifts(cntl = cntl, ch = 1, target = "IL-6",
@@ -417,8 +418,8 @@ AnalyzeData <- function(loc = "plots", ch, cntl = "thermal", filename = 'groupNa
                              time1 = 52, time2 = 41, step = ch2_MCP1)
         # GetNetShifts(cntl = cntl, ch = 2, target = "IL-6",
         #                      time1 = 52, time2 = 41, step = ch2_IL6)
-        PlotNetShifts(cntl = cntl, ch = 1, step = ch1_MCP1, target = "MCP-1")
-        PlotNetShifts(cntl = cntl, ch = 2, step = ch2_MCP1, target = "MCP-1")
+        # PlotNetShifts(cntl = cntl, ch = 1, step = ch1_MCP1, target = "MCP-1")
+        # PlotNetShifts(cntl = cntl, ch = 2, step = ch2_MCP1, target = "MCP-1")
 }
 
 AnalyzeAllData <- function() {

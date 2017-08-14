@@ -84,7 +84,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         dat.cntl <- filter(dat, Target != cntl)
         dat.cntl$Cntl <- NULL
         
-        write_csv(dat, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 
+        write_csv(dat.cntl, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 
                              ".csv", sep = ''))   
 }
 
@@ -267,13 +267,13 @@ AnalyzeData <- function() {
         GetNetShifts(cntl = "thermal", ch = 2, time1 = 51, time2 = 39, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
-        CheckRingQuality(time1 = 10, time2 = 20)
+        CheckRingQuality(time1 = 20, time2 = 30)
 }
 
 AnalyzeAllData <- function() {
         foldersList <- list.dirs(recursive = FALSE)
+        directory <- getwd()
         lapply(foldersList, function(i){
-                directory <- getwd()
                 setwd(i)
                 AnalyzeData()
                 setwd(directory)

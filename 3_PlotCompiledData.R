@@ -1,9 +1,11 @@
-setwd("D:/Box Sync/Data/")
+# setwd("D:/Box Sync/Data/")
 
+# Load libraries and set theme for all plots
 library(tidyverse)
 library(ggthemes)
 theme_set(theme_few(base_size = 16))
 
+# Load in data to make plots
 filename <- "compiledLabeled.csv"
 
 if (!file.exists("compiledLabeled.csv")){
@@ -12,13 +14,10 @@ if (!file.exists("compiledLabeled.csv")){
         download.file(url, filename)
 }
 
-
-# Read in data
 dat <- read_csv("compiledLabeled.csv")
-# dat$Treatment <- factor(dat$Treatment, levels = c("(+)-Serum", "(-)-Serum", 
-#                 "DMSO", "Erlotinib", "GNE-317", "Apitolisib", "Palbociclib"))
 
 # Save current wd to return to later and setwd to plots folder
+
 directory <- getwd()
 setwd("../XPP_Plots/")
 
@@ -112,16 +111,10 @@ for (i in treatmentList) {
 }
 
 ## Plot Treatments
-
 # Function to plot individual treatments
 PlotTreatment <- function(control, treatment, targets){
         dat.cntl <- filter(dat, Treatment == control & `Time Point` == 1)
         dat.all <- rbind(filter(dat, Treatment == treatment), dat.cntl)
-        
-        dat.all$`Cell Line` <- factor(dat.all$`Cell Line`, 
-                                      labels = c("GBM 6", "GBM 26"))
-        
-        dat.all$`Time Point` <- factor(dat.all$`Time Point`)
         
         g.all <- ggplot(dat.all, 
                         aes(x = interaction(`Time Point`, Treatment, Target),
@@ -184,7 +177,7 @@ PlotTreatment <- function(control, treatment, targets){
                               element_text(angle = 90, hjust = 1, vjust = 0.5))
         
         ggsave(txt_26, 
-               filename = paste0("Treatment Plots", treatment, "_GBM26.png"), 
+               filename = paste0("Treatment Plots/", treatment, "_GBM26.png"), 
                width = 8, height = 6)
 }
 
@@ -206,7 +199,6 @@ PlotTreatment(control = "DMSO",
                           "pmTOR Ser2448", "pGSK3b Ser9", "pp70S6K Thr389"))
 
 ## Pairwise Treatment Comparisons
-
 # Target list
 compTargets <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4",
                  "pp70S6K Thr389", "pRb Ser780", "pRb Ser807/11")
@@ -256,7 +248,7 @@ TreatmentComp <- function(treatments, targets, cellLine){
 # Run through pair-wise list to plot treatment comparisons
 lapply(txtPairs, function(i){
         TreatmentComp(treatments = as.vector(i), targets = compTargets,
-                      cellLine = 6)
+                      cellLine = "GBM 6")
         TreatmentComp(treatments = as.vector(i), targets = compTargets,
-                      cellLine = 26)
+                      cellLine = "GBM 26")
 })

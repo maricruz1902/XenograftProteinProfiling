@@ -368,11 +368,12 @@ Fit <- function(loc = 'plots', ch){
                 y <- dat.tar$`Net Shift`
                 x <- dat.tar$Step
                 #fit[[i]] <- nls(y ~ SSlogis(x, Asym, xmid, scal))
-                fit[[i]] <- nls(formula = y ~ A.2 + (A.1-A.2)/(1 + (x/x.0)^p),
+                fit.info <- nls(formula = y ~ A.2 + (A.1-A.2)/(1 + (x/x.0)^p),
                                 start = list(A.2 =max(y),
                                              A.1 = min(y),
                                              x.0 = mean(y),
                                              p = 1))
+                fit[[i]] <- summary(fit.info)
         }
         
         capture.output(fit, file = "fitInfo.txt")

@@ -51,6 +51,7 @@ PlotCombineNetShifts <- function(){
 }
 
 Fit <- function(loc = 'plots', tarList){
+        library(scales)
         dat <- read_csv("netShiftsCombined.csv")
         theme_set(theme_few(base_size = 16))
         
@@ -74,8 +75,8 @@ Fit <- function(loc = 'plots', tarList){
                 geom_smooth(method = 'nls',
                             formula = y ~ A + (B - A) / (1 + (x / C) ^ D),
                             method.args = list(start = c(A = 10000,
-                                                         B = 500,
-                                                         C = 5000,
+                                                         B = 100,
+                                                         C = 4000,
                                                          D = 1)),
                             se = FALSE) +
                 labs(x = "Analyte Concentration (pg/mL)",
@@ -164,52 +165,7 @@ CalibrationStation <- function() {
                 AnalyzeData()
                 setwd(directory)
         }
-        CombineNetShifts()
+        AnalyzeCalData()
         PlotCombineNetShifts()
         Fit(tarList = "IL-6")
 }
-
-# y <- dat$`Net Shift`
-# x <- dat$Step
-# 
-# fit.info <- nls(formula = y ~ A + (B - A) / (1 + (x / C) ^ D),
-#                 start = list(A = 10000,
-#                              B = 100,
-#                              C = 4000,
-#                              D = 1),
-#                 control = list(tol = 5e-08, minFactor = 0, maxiter  = 10000))
-# 
-# summary(fit.info)
-# 
-# plot(y ~ x, col = "blue")
-# 
-# A <- as.numeric(coef(fit.info)[1])
-# B <- as.numeric(coef(fit.info)[2])
-# C <- as.numeric(coef(fit.info)[3])
-# D <- as.numeric(coef(fit.info)[4])
-# 
-# D <- coef(fit.info)[4]
-# 
-# curve(A + (B - A) / (1 + x/C)^D, 0, 10000)
-# 
-# A.b <- 8792.84
-# B.b <- 495.87
-# C.b <- 2084.53
-# D.b <- 0.78583
-#   
-# testFun <- function(x) {A + (B - A) / (1 + (x / C) ^ D)}
-# testFun2 <- function(x) {A.b + (B.b - A.b) / (1 + (x / C.b)^D.b)}
-# 
-# library(scales)
-# 
-# ggplot(dat, aes(x = Step, y = `Net Shift`)) + 
-#         geom_point() +
-#         geom_boxplot(aes(group = Step), fill = "red") +
-#         geom_smooth(method = "drc")
-#         stat_function(fun = testFun, color = "blue", size = 1) +
-#         stat_function(fun = testFun2, color = "red", size = 1) +
-#         scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
-#                       labels = trans_format("log10", math_format(10^.x))) +
-#         labs(x = "Analyte Concentration (pg/mL)",
-#              y = expression(paste("Relative Shift (",Delta,"pm)"))) +
-#         annotation_logticks()

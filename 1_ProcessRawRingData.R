@@ -81,7 +81,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         dat.cntl <- mutate(dat, Shift = Shift - Cntl)
         
         # remove control column and control rings
-        dat.cntl <- filter(dat, Target != cntl)
+        dat.cntl <- filter(dat.cntl, Target != cntl)
         dat.cntl$Cntl <- NULL
         
         write_csv(dat.cntl, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 

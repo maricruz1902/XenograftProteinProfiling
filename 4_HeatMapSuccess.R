@@ -14,29 +14,34 @@ DataSplitHeat <- function(){
         dat.26 <- filter(dat.1, `Cell Line` == "GBM 26")
         dat.1h <- filter(dat.1, `Time Point` == "1 h")
         dat.24h <- filter(dat.1, `Time Point` == "24 h")
-        dat.6.1 <- filter(dat.1, `Time Point` == "1 h", `Cell Line` == "GBM 6")
-        dat.6.24 <- filter(dat.1, `Time Point` == "24 h", `Cell Line` == "GBM 6")
-        dat.26.1 <- filter(dat.1, `Time Point` == "1 h", `Cell Line` == "GBM 26")
-        dat.26.24 <- filter(dat.1, `Time Point` == "24 h", `Cell Line` == "GBM 26")
+        dat.6.1 <- filter(dat.1, `Time Point` == "1 h",
+                          `Cell Line` == "GBM 6")
+        dat.6.24 <- filter(dat.1, `Time Point` == "24 h",
+                           `Cell Line` == "GBM 6")
+        dat.26.1 <- filter(dat.1, `Time Point` == "1 h",
+                           `Cell Line` == "GBM 26")
+        dat.26.24 <- filter(dat.1, `Time Point` == "24 h",
+                            `Cell Line` == "GBM 26")
         
-        casting.1 <- dcast(dat.1, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.1 <- dcast(dat.1, Treatment + `Cell Line` + `Time Point` ~
                              Target, mean, value.var = "Net Shift")
-        casting.6 <- dcast(dat.6, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.6 <- dcast(dat.6, Treatment + `Cell Line` + `Time Point` ~
                              Target, mean, value.var = "Net Shift")
-        casting.26 <- dcast(dat.26, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.26 <- dcast(dat.26, Treatment + `Cell Line` + `Time Point` ~
                               Target, mean, value.var = "Net Shift")
-        casting.1h <- dcast(dat.1h, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.1h <- dcast(dat.1h, Treatment + `Cell Line` + `Time Point` ~
                               Target, mean, value.var = "Net Shift")
-        casting.24h <- dcast(dat.24h, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.24h <- dcast(dat.24h, Treatment + `Cell Line` + `Time Point` ~
                               Target, mean, value.var = "Net Shift")
-        casting.6.1 <- dcast(dat.6.1, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.6.1 <- dcast(dat.6.1, Treatment + `Cell Line` + `Time Point` ~
                                   Target, mean, value.var = "Net Shift")
-        casting.6.24 <- dcast(dat.6.24, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.6.24 <- dcast(dat.6.24, Treatment + `Cell Line` + `Time Point` ~
                                Target, mean, value.var = "Net Shift")
-        casting.26.1 <- dcast(dat.26.1, Treatment + `Cell Line` + `Time Point` ~ 
+        casting.26.1 <- dcast(dat.26.1, Treatment + `Cell Line` + `Time Point` ~
                                 Target, mean, value.var = "Net Shift")
-        casting.26.24 <- dcast(dat.26.24, Treatment + `Cell Line` + `Time Point` ~ 
-                                 Target, mean, value.var = "Net Shift")
+        casting.26.24 <- dcast(dat.26.24, Treatment + `Cell Line` +
+                               `Time Point` ~ Target, mean,
+                               value.var = "Net Shift")
         
         rownames(casting.1) = paste(casting.1$Treatment,
                                     casting.1$`Cell Line`,
@@ -120,55 +125,64 @@ HeatPlots <- function(){
         # hmcol <- colorRampPalette(c("darkblue", "white", "darkred"))
         hmcol <- colorRampPalette(c("#3a5387", "#e8e8e8", "#b25752"))(256)
         
-        png('Heatmap_All.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_All.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.1.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 6 & 26 with 1h & 24 h")
         dev.off()
         
-        png('Heatmap_GBM6.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_GBM6.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.6.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 6 with 1h & 24h")
         dev.off()
         
-        png('Heatmap_GBM26.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_GBM26.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.26.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 26 with 1h & 24h")
         dev.off()
         
-        png('Heatmap_1h_both.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_1h_both.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.1h.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 6 & 26 with 1h")
         dev.off()
         
-        png('Heatmap_24h_both.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_24h_both.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.24h.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 6 & 26 with 24h")
         dev.off()
         
-        png('Heatmap_GBM6_1h.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_GBM6_1h.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.6.1.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 6 with 1h")
         dev.off()
         
-        png('Heatmap_GBM6_24h.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_GBM6_24h.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.6.24.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 6 with 24h")
         dev.off()
         
-        png('Heatmap_GBM26_1h.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_GBM26_1h.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.26.1.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 26 with 1h")
         dev.off()
         
-        png('Heatmap_GBM26_24h.png', width = 16, height = 12, units = "in", res = 100)
+        png('Heatmap_GBM26_24h.png', width = 16, height = 12,
+            units = "in", res = 100)
         heatmap.2(casting.26.24.m, scale = "col", col = hmcol, key = T, 
                   margins = c(20, 20), trace = "none",
                   main = "GBM 26 with 24h")

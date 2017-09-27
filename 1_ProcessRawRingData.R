@@ -11,6 +11,7 @@ GetName <- function(){
 }
 
 AggData <- function(loc = 'plots', filename = 'groupNames_XPP.csv') {
+        # load relevant libraries
         library(tidyverse)
         
         # get working directory to reset at end of function
@@ -50,6 +51,7 @@ AggData <- function(loc = 'plots', filename = 'groupNames_XPP.csv') {
                 tmp
         })
         
+        # combine data from list into single data frame
         df <- bind_rows(df)
         
         # renames columns in df
@@ -84,6 +86,7 @@ SubtractControl <- function(loc = 'plots', ch, cntl){
         dat.cntl <- filter(dat.cntl, Target != cntl)
         dat.cntl$Cntl <- NULL
         
+        # save data to new file
         write_csv(dat.cntl, paste(loc,"/", name, "_", cntl, "Control", "_ch", ch, 
                              ".csv", sep = ''))   
 }
@@ -236,17 +239,22 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
 }
 
 CheckRingQuality <- function(loc = 'plots', time1, time2, varLevel = 100) {
+        # load relevant libraries
         library(tidyverse)
         
+        # read in data and subset for a flat part of the run
         dat <- read_csv(paste0(loc,"/", name, "_allRings.csv"))
         dat <- subset(dat, Time > time1 & Time < time2)
         
+        # calculate variance for each ring
         dat.avg <- dat %>% group_by(Ring) %>%
                 summarise_at(vars(Shift), funs(var))
         
+        # create variables for rings with variance above/below given variance
         ringWinners <- filter(dat.avg, Shift < varLevel) %>% select(Ring)
         ringLosers <- filter(dat.avg, Shift > varLevel) %>% select(Ring)
         
+        # save files with list of good and bad rings base on given variance
         write_csv(ringWinners, paste0(loc, '/', name, "_ringWinners.csv"))
         write_csv(ringLosers, paste0(loc, '/', name, "_ringLosers.csv"))
 }
@@ -268,6 +276,7 @@ AnalyzeData <- function() {
         PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
         CheckRingQuality(time1 = 20, time2 = 30)
+        shell.exec("https://youtu.be/3GwjfUFyY6M")
 }
 
 AnalyzeAllData <- function() {

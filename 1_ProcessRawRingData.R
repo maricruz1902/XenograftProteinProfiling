@@ -276,7 +276,7 @@ AnalyzeData <- function() {
         PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
         CheckRingQuality(time1 = 20, time2 = 30)
-        shell.exec("https://youtu.be/3GwjfUFyY6M")
+        shell.exec("https://youtu.be/dQw4w9WgXcQ")
 }
 
 AnalyzeAllData <- function() {

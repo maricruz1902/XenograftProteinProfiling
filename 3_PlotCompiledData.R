@@ -1,11 +1,11 @@
 ## Plot all data combined
 PlotAllData <- function(){
-        g <- ggplot(dat, aes(x = Target, y = `Net Shift`))
+        g <- ggplot(dat, aes(x = Target, y = NetShift))
         
         all.point <- g + 
                 geom_point(aes(color = Treatment), 
                            position = "jitter", alpha = 0.7) +
-                facet_grid(`Cell Line` ~ `Time Point`) + 
+                facet_grid(CellLine ~ TimePoint) + 
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
                 ggtitle("Full Dataset")
                 
@@ -15,7 +15,7 @@ PlotAllData <- function(){
         
         all.boxplot <- g + 
                 geom_boxplot(aes(fill = Treatment)) +
-                facet_grid(`Cell Line` ~ `Time Point`) +
+                facet_grid(CellLine ~ TimePoint) +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
                 ggtitle("Full Dataset")
         
@@ -32,20 +32,20 @@ PlotEachTarget <- function(){
                 dat.tar <- filter(dat, Target == i & Treatment != "(+)-Serum" & 
                                 Treatment != "(-)-Serum")
                 
-                g <- ggplot(dat.tar, aes(x = Treatment, y = `Net Shift`))
+                g <- ggplot(dat.tar, aes(x = Treatment, y = NetShift))
                 
                 plotName <- unlist(strsplit(i, "/"))[1]
                 
                 target.point <- g + 
                         geom_point(aes(color = Treatment), 
                                    position = "jitter") + 
-                        facet_grid(`Cell Line`~`Time Point`) +
+                        facet_grid(CellLine~TimePoint) +
                         ggtitle(paste0("Target: ", i)) + 
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 
                 target.box <- g + 
                         geom_boxplot(aes(fill = Treatment)) + 
-                        facet_grid(`Cell Line`~`Time Point`) +
+                        facet_grid(CellLine~TimePoint) +
                         ggtitle(paste0("Target: ", i)) + 
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 
@@ -71,17 +71,17 @@ PlotEachTreatment <- function(){
                 
                 dat.rx <- filter(dat, Treatment == i)
                 
-                g <- ggplot(dat.rx, aes(Target, `Net Shift`))
+                g <- ggplot(dat.rx, aes(Target, NetShift))
                 
                 fig4 <- g + 
                         geom_point(aes(color = Target), position = "jitter") + 
-                        facet_grid(`Cell Line`~`Time Point`) +
+                        facet_grid(CellLine~TimePoint) +
                         ggtitle(paste0("Treatment: ", i)) +
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 
                 fig5 <- g + 
                         geom_boxplot(aes(fill = Target)) + 
-                        facet_grid(`Cell Line`~`Time Point`) +
+                        facet_grid(CellLine~TimePoint) +
                         ggtitle(paste0("Treatment: ", i)) +
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 
@@ -99,7 +99,7 @@ PlotEachTreatment <- function(){
 
 ## Plot Treatments
 PlotTreatment <- function(control, treatment, targets, cellLine){
-        dat.cntl <- filter(dat, Treatment == control & `Time Point` == "1 h")
+        dat.cntl <- filter(dat, Treatment == control & TimePoint == "1 h")
         dat.all <- rbind(filter(dat, Treatment == treatment), dat.cntl)
         dat.all$Treatment <- factor(dat.all$Treatment, 
                                 levels = c("DMSO", "(-)-Serum", 
@@ -109,11 +109,11 @@ PlotTreatment <- function(control, treatment, targets, cellLine){
         
         # Plot all treatments for treatment
         g.all <- ggplot(dat.all, 
-                        aes(x = interaction(`Time Point`, Treatment, Target),
-                            y = `Net Shift`, 
+                        aes(x = interaction(TimePoint, Treatment, Target),
+                            y = NetShift, 
                             fill = Target)) +
                 geom_boxplot() + 
-                facet_grid(`Cell Line`~.) +
+                facet_grid(CellLine~.) +
                 labs(fill = "") + 
                 scale_x_discrete(labels = rep(c("0 h", "1 h", "24 h"), 
                                               length(unique(dat.all$Target)))) +
@@ -128,12 +128,12 @@ PlotTreatment <- function(control, treatment, targets, cellLine){
         
         # Plot select treatments for treatment
         dat.rx <- filter(dat.all, Target %in% targets & 
-                                   `Cell Line` == cellLine)
+                                   CellLine == cellLine)
         
         g <- ggplot(dat.rx, 
-                    aes(x = interaction(`Time Point`, Treatment, 
-                                        Target, `Cell Line`), 
-                        y = `Net Shift`, 
+                    aes(x = interaction(TimePoint, Treatment, 
+                                        Target, CellLine), 
+                        y = NetShift, 
                         fill = Target))
         
         txt <- g +
@@ -155,16 +155,16 @@ PlotTreatment <- function(control, treatment, targets, cellLine){
 ## Pairwise treatment comparisons
 TreatmentComp <- function(treatments, targets, cellLine){
         dat.rx <- filter(dat, Treatment == treatments & Target %in% targets &
-                                 `Cell Line` == cellLine)
+                                 CellLine == cellLine)
         
         g <- ggplot(dat.rx, aes(x = Target, 
                                 group = interaction(Treatment, 
-                                                    `Time Point`,
+                                                    TimePoint,
                                                     Target),
-                                y = `Net Shift`))
+                                y = NetShift))
         
         fig_comp <- g + 
-                geom_boxplot(aes(fill = interaction(Treatment, `Time Point`))) + 
+                geom_boxplot(aes(fill = interaction(Treatment, TimePoint))) + 
                 labs(fill = "") + 
                 xlab("Target") + 
                 ggtitle(paste0(treatments[1], " vs ", treatments[2])) +
@@ -173,7 +173,7 @@ TreatmentComp <- function(treatments, targets, cellLine){
         
         fig_comp.2 <- g + 
                 geom_boxplot(aes(fill = Treatment)) + 
-                facet_wrap(~`Time Point`) + 
+                facet_wrap(~TimePoint) + 
                 labs(fill = "") + 
                 xlab("Target") + 
                 ggtitle(paste0(treatments[1], " vs ", treatments[2])) +
@@ -203,14 +203,6 @@ PlotData <- function(){
         # Load in data to make plots
         filename <- "compiledLabeled.csv"
         
-        if (!file.exists("compiledLabeled.csv")){
-                git <- "https://raw.githubusercontent.com/"
-                repo <- "JamesHWade/XenograftProteinProfiling/master/"
-                url <- paste0(git, repo, filename)
-                filename <- basename(url)
-                download.file(url, filename)
-        }
-        
         dat <<- read_csv("compiledLabeled.csv")
         dat$Treatment <- factor(dat$Treatment, 
                                     levels = c("DMSO", "(-)-Serum", 
@@ -230,8 +222,8 @@ PlotData <- function(){
         
         control <- "DMSO"
         txtList <- unique(dat$Treatment)
-        compTargets <- c("pAkt Ser473", "pS6 Ser235/6", "pS6 Ser240/4",
-                         "pp70S6K Thr389", "pRb Ser780", "pRb Ser807/11")
+        compTargets <- c("pAktSer473", "pS6Ser235/6", "pS6Ser240/4",
+                         "pp70S6KThr389", "pRbSer780", "pRbSer807/11")
         
         lapply(txtList, function(i){
                 PlotTreatment(control = control, treatment = i,
@@ -248,9 +240,9 @@ PlotData <- function(){
         # Run through pair-wise list to plot treatment comparisons
         lapply(txtPairs, function(i){
           TreatmentComp(treatments = as.vector(i), targets = compTargets,
-                        cellLine = "GBM 6")
+                        cellLine = "GBM6")
           TreatmentComp(treatments = as.vector(i), targets = compTargets,
-                        cellLine = "GBM 26")
+                        cellLine = "GBM26")
         })
         setwd(directory)
 }

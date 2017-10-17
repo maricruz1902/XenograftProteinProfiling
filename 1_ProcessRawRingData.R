@@ -190,7 +190,7 @@ GetNetShifts <- function(cntl, ch, loc = 'plots', time1, time2, step = 1){
         
         # calculate nat shift and create new column in dataframe
         dat.rings <- dat.rings %>% 
-                mutate(`Net Shift` = Shift.1 - Shift.2)
+                mutate(NetShift = Shift.1 - Shift.2)
         
         # save net shift data
         write_csv(dat.rings, paste0(loc, "/", name, "_netShifts_", cntl, "cntl_",
@@ -210,7 +210,7 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
         dat.nothermal <- filter(dat, Target != "thermal")
         
         plots <- ggplot(dat.nothermal, 
-                        aes(x = Target, y = `Net Shift`, fill = Target)) +
+                        aes(x = Target, y = NetShift, fill = Target)) +
                 geom_boxplot() +
                 theme(axis.text.x = element_text(angle = 45, hjust = 1),
                       legend.position="none") +
@@ -218,7 +218,7 @@ PlotNetShifts <- function(cntl, ch, loc = 'plots', step = 1){
                 ggtitle(paste0(name, " Ch: ", ch, " Control: ", cntl))
         
         allRings <- ggplot(dat.nothermal, 
-                           aes(x = factor(Ring), y= `Net Shift`, 
+                           aes(x = factor(Ring), y= NetShift, 
                                fill = Target)) +
                 geom_bar(stat = "identity") +
                 theme(axis.text.x = 
@@ -276,7 +276,7 @@ AnalyzeData <- function() {
         PlotNetShifts(cntl = "thermal", ch = 1, step = 1)
         PlotNetShifts(cntl = "thermal", ch = 2, step = 1)
         CheckRingQuality(time1 = 20, time2 = 30)
-        shell.exec("https://youtu.be/dQw4w9WgXcQ")
+        # shell.exec("https://youtu.be/dQw4w9WgXcQ")
 }
 
 AnalyzeAllData <- function() {

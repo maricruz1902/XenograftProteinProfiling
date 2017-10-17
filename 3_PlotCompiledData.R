@@ -8,7 +8,7 @@ PlotAllData <- function(){
                 facet_grid(CellLine ~ TimePoint) + 
                 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
                 ggtitle("Full Dataset")
-                
+        
         
         ggsave(all.point, filename = "everything_point.png", 
                width = 12, height = 8)
@@ -30,7 +30,7 @@ PlotEachTarget <- function(){
         for(i in targetList) {
                 
                 dat.tar <- filter(dat, Target == i & Treatment != "(+)-Serum" & 
-                                Treatment != "(-)-Serum")
+                                          Treatment != "(-)-Serum")
                 
                 g <- ggplot(dat.tar, aes(x = Treatment, y = NetShift))
                 
@@ -102,10 +102,10 @@ PlotTreatment <- function(control, treatment, targets, cellLine){
         dat.cntl <- filter(dat, Treatment == control & TimePoint == "1 h")
         dat.all <- rbind(filter(dat, Treatment == treatment), dat.cntl)
         dat.all$Treatment <- factor(dat.all$Treatment, 
-                                levels = c("DMSO", "(-)-Serum", 
-                                           "Apitolisib", "Erlotinib",
-                                           "Palbociclib", "GNE-317",
-                                           "(+)-Serum"))
+                                    levels = c("DMSO", "(-)-Serum", 
+                                               "Apitolisib", "Erlotinib",
+                                               "Palbociclib", "GNE-317",
+                                               "(+)-Serum"))
         
         # Plot all treatments for treatment
         g.all <- ggplot(dat.all, 
@@ -128,7 +128,7 @@ PlotTreatment <- function(control, treatment, targets, cellLine){
         
         # Plot select treatments for treatment
         dat.rx <- filter(dat.all, Target %in% targets & 
-                                   CellLine == cellLine)
+                                 CellLine == cellLine)
         
         g <- ggplot(dat.rx, 
                     aes(x = interaction(TimePoint, Treatment, 
@@ -156,7 +156,7 @@ PlotTreatment <- function(control, treatment, targets, cellLine){
 TreatmentComp <- function(treatments, targets, cellLine){
         dat.rx <- filter(dat, Treatment == treatments & Target %in% targets &
                                  CellLine == cellLine)
-        
+        print(head(dat.rx))
         g <- ggplot(dat.rx, aes(x = Target, 
                                 group = interaction(Treatment, 
                                                     TimePoint,
@@ -201,23 +201,21 @@ PlotData <- function(){
         theme_set(theme_few(base_size = 16))
         
         # Load in data to make plots
-        filename <- "compiledLabeled.csv"
-        
         dat <<- read_csv("compiledLabeled.csv")
         dat$Treatment <- factor(dat$Treatment, 
-                                    levels = c("DMSO", "(-)-Serum", 
-                                               "Apitolisib", "Erlotinib",
-                                               "Palbociclib", "GNE-317",
-                                               "(+)-Serum"))
+                                levels = c("DMSO", "(-)-Serum", 
+                                           "Apitolisib", "Erlotinib",
+                                           "Palbociclib", "GNE-317",
+                                           "(+)-Serum"))
         
         # Save current wd to return to later and setwd to plots folder
         directory <- getwd()
         setwd("../XPP_Plots/")
         
         PlotAllData()
-
+        
         PlotEachTreatment()
-
+        
         PlotEachTarget()
         
         control <- "DMSO"
@@ -227,9 +225,9 @@ PlotData <- function(){
         
         lapply(txtList, function(i){
                 PlotTreatment(control = control, treatment = i,
-                              targets = compTargets, cellLine = "GBM 6")
+                              targets = compTargets, cellLine = "GBM6")
                 PlotTreatment(control = control, treatment = i,
-                              targets = compTargets, cellLine = "GBM 26")
+                              targets = compTargets, cellLine = "GBM26")
         })
         
         
@@ -239,10 +237,10 @@ PlotData <- function(){
         
         # Run through pair-wise list to plot treatment comparisons
         lapply(txtPairs, function(i){
-          TreatmentComp(treatments = as.vector(i), targets = compTargets,
-                        cellLine = "GBM6")
-          TreatmentComp(treatments = as.vector(i), targets = compTargets,
-                        cellLine = "GBM26")
+                TreatmentComp(treatments = as.vector(i), targets = compTargets,
+                              cellLine = "GBM6")
+                TreatmentComp(treatments = as.vector(i), targets = compTargets,
+                              cellLine = "GBM26")
         })
         setwd(directory)
 }
